@@ -5,13 +5,19 @@ import { Resend } from 'resend';
 import type { IOrder } from '@/types';
 import { formatKES, formatDateTime } from './utils';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM   = process.env.EMAIL_FROM || 'Floresco <orders@florescofragrances.co.ke>';
 const WA_API = `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
+
+let resend: Resend | null = null;
 
 // ---------- EMAIL ----------
 export async function sendEmail(to: string, subject: string, html: string) {
   try {
+    if (!process.env.RESEND_API_KEY) {
+      console.error('Email send skipped: RESEND_API_KEY is not configured');
+      return false;
+    }
+    resend ??= new Resend(process.env.RESEND_API_KEY);
     const { error } = await resend.emails.send({ from: FROM, to, subject, html });
     if (error) console.error('Email error:', error);
     return !error;
