@@ -27,6 +27,11 @@ function idleLimitMs(role?: UserRole) {
 // and both `/api/auth/session` and middleware's `req.auth` resolve through
 // that same code path, so this is consistently enforced everywhere.
 export const authConfig: NextAuthConfig = {
+  // Cloudflare Workers (unlike Vercel) isn't auto-recognized by NextAuth,
+  // so the incoming Host header is untrusted by default and every auth
+  // request fails with a generic "server configuration" error unless this
+  // is set explicitly.
+  trustHost: true,
   session: { strategy: 'jwt', maxAge: CUSTOMER_IDLE_MS / 1000, updateAge: 0 },
   pages: { signIn: '/account' },
   providers: [],
