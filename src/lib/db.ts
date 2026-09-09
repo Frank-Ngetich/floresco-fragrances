@@ -7,11 +7,24 @@ import mongoose from 'mongoose';
 // awaiting a connection attempt a different, possibly-already-finished
 // request started — an unsafe cross-request handoff on Workers. Instead,
 // only ever reuse an already-*established* connection (mongoose's own
-// readyState), and let each request that needs one own its own connect
-// call end-to-end within its own lifecycle.
+// readyState), and let each request that needs one own its connect call
+// end-to-end within its own lifecycle.
+//
+// If an earlier request got cut off mid-handshake, the global mongoose
+// singleton (shared across requests reusing the same warm Workers isolate)
+// can be left in a stuck, non-0/non-1 readyState — every later request in
+// that isolate would otherwise inherit that broken state forever. Force-close
+// and retry fresh whenever that happens, and after a failed attempt, so the
+// next request always starts clean.
 export async function connectDB(): Promise<typeof mongoose> {
-  if (mongoose.connection.readyState === 1) {
+  const state = mongoose.connection.readyState;
+
+  if (state === 1) {
     return mongoose;
+  }
+
+  if (state !== 0) {
+    try { await mongoose.connection.close(); } catch {}
   }
 
   const MONGODB_URI = process.env.MONGODB_URI;
@@ -19,13 +32,18 @@ export async function connectDB(): Promise<typeof mongoose> {
     throw new Error('MONGODB_URI is not defined in environment variables');
   }
 
-  await mongoose.connect(MONGODB_URI, {
-    bufferCommands: false,
-    maxPoolSize: 10,
-    serverSelectionTimeoutMS: 10000,
-    connectTimeoutMS: 10000,
-    socketTimeoutMS: 10000,
-  });
+  try {
+    await mongoose.connect(MONGODB_URI, {
+      bufferCommands: false,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 10000,
+    });
+  } catch (err) {
+    try { await mongoose.connection.close(); } catch {}
+    throw err;
+  }
 
   return mongoose;
 }
