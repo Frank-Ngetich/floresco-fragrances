@@ -23,6 +23,8 @@ export async function connectDB(): Promise<typeof mongoose> {
       bufferCommands: false,
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 10000,
     });
   }
 
