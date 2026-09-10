@@ -7,6 +7,7 @@ import {
   FolderOpen, ExternalLink, Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { uploadToMedia, MediaUnconfiguredError } from '@/lib/media-upload';
 
 interface MediaFile {
   key:          string;
@@ -32,36 +33,6 @@ function formatBytes(bytes: number): string {
   return `${(bytes/1024/1024).toFixed(1)} MB`;
 }
 
-/* Downscale + re-compress large photos before upload — raw camera JPEGs
-   (2-3MB, 4000px+) make first-time image optimization painfully slow.
-   Leaves SVG/GIF (vector/animated) and already-small files untouched. */
-async function compressImage(file: File, maxDim = 2000, quality = 0.82): Promise<File> {
-  if (!file.type.startsWith('image/') || file.type === 'image/svg+xml' || file.type === 'image/gif') {
-    return file;
-  }
-  const bitmap = await createImageBitmap(file).catch(() => null);
-  if (!bitmap) return file;
-
-  let { width, height } = bitmap;
-  if (width > maxDim || height > maxDim) {
-    const scale = maxDim / Math.max(width, height);
-    width  = Math.round(width * scale);
-    height = Math.round(height * scale);
-  }
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return file;
-  ctx.drawImage(bitmap, 0, 0, width, height);
-
-  const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
-  if (!blob || blob.size >= file.size) return file; // only use it if it actually helped
-
-  const newName = file.name.replace(/\.\w+$/, '') + '.jpg';
-  return new File([blob], newName, { type: 'image/jpeg' });
-}
 
 export default function AdminMedia() {
   const [files,         setFiles]         = useState<MediaFile[]>([]);
@@ -108,60 +79,23 @@ export default function AdminMedia() {
   /* ── Upload to R2 via presigned URL ── */
   async function uploadFile(file: File) {
     setCompressing(true);
-    const optimized = await compressImage(file);
-    setCompressing(false);
-
     setUploading(true);
     setUploadPct(0);
     try {
-      /* 1 - Get presigned URL */
-      const presignRes = await fetch('/api/media', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          filename:    optimized.name,
-          contentType: optimized.type,
-          folder:      folder || 'general',
-        }),
-      });
-
-      if (!presignRes.ok) {
-        const err = await presignRes.json();
-        if (err.unconfigured) {
-          setUnconfigured(true);
-          return;
-        }
-        throw new Error(err.error || 'Failed to get upload URL');
-      }
-
-      const { presignedUrl, key, publicUrl } = await presignRes.json();
-
-      /* 2 - Upload directly to R2 with progress tracking */
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) setUploadPct(Math.round((e.loaded / e.total) * 100));
-        };
-        xhr.onload  = () => xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`));
-        xhr.onerror = () => reject(new Error('Upload error'));
-        xhr.open('PUT', presignedUrl);
-        xhr.setRequestHeader('Content-Type', optimized.type);
-        xhr.setRequestHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        xhr.send(optimized);
-      });
-
-      /* 3 - Add to local state immediately */
+      const uploaded = await uploadToMedia(file, folder || 'general', pct => { setCompressing(false); setUploadPct(pct); });
       const newFile: MediaFile = {
-        key,
-        url:          publicUrl,
-        name:         optimized.name,
-        size:         optimized.size,
+        key:          uploaded.key,
+        url:          uploaded.url,
+        name:         uploaded.name,
+        size:         uploaded.size,
         lastModified: new Date().toISOString(),
-        type:         fileType(optimized.name),
+        type:         fileType(uploaded.name),
       };
       setFiles(prev => [newFile, ...prev]);
       setSelected(newFile);
     } catch (err: any) {
+      setCompressing(false);
+      if (err instanceof MediaUnconfiguredError) { setUnconfigured(true); setUploading(false); setUploadPct(0); return; }
       alert(`Upload failed: ${err.message}`);
     }
     setUploading(false);
@@ -266,14 +200,14 @@ export default function AdminMedia() {
                 <div><span className="text-amber-300">R2_PUBLIC_URL</span>=https://media.florescofragrances.co.ke</div>
               </div>
               <div className="mt-6 space-y-3 text-sm text-white/55">
-                <p><span className="text-white/80 font-medium">Step 1:</span> Go to <a href="https://dash.cloudflare.com" target="_blank" rel="noopener noreferrer" className="text-wine-300 hover:text-wine-200">dash.cloudflare.com</a> → R2 Object Storage → Create bucket named <code className="bg-white/10 px-1 rounded">floresco-media</code></p>
+                <p><span className="text-white/80 font-medium">Step 1:</span> Go to <a href="https://dash.cloudflare.com" target="_blank" rel="noopener noreferrer" className="text-gold-300 hover:text-gold-200">dash.cloudflare.com</a> → R2 Object Storage → Create bucket named <code className="bg-white/10 px-1 rounded">floresco-media</code></p>
                 <p><span className="text-white/80 font-medium">Step 2:</span> R2 → Manage R2 API Tokens → Create token with <em>Object Read & Write</em> permission</p>
                 <p><span className="text-white/80 font-medium">Step 3:</span> Set the bucket to <em>Public</em> or connect a custom domain as R2_PUBLIC_URL</p>
                 <p><span className="text-white/80 font-medium">Step 4:</span> Run <code className="bg-white/10 px-1 rounded">npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner</code></p>
                 <p><span className="text-white/80 font-medium">Step 5:</span> Restart npm run dev</p>
               </div>
               <button onClick={loadFiles}
-                className="mt-6 flex items-center gap-2 bg-wine-600 hover:bg-wine-700 text-white text-xs tracking-[0.14em] uppercase px-5 py-2.5 rounded transition-colors">
+                className="mt-6 flex items-center gap-2 bg-gold-600 hover:bg-gold-700 text-white text-xs tracking-[0.14em] uppercase px-5 py-2.5 rounded transition-colors">
                 <RefreshCw size={13} /> Check Again
               </button>
             </div>
@@ -297,7 +231,7 @@ export default function AdminMedia() {
             <Link size={13} /> Add by URL
           </button>
           <button onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-2 bg-wine-600 hover:bg-wine-700 text-white text-xs tracking-[0.14em] uppercase font-medium px-5 py-2.5 rounded transition-colors">
+            className="flex items-center gap-2 bg-gold-600 hover:bg-gold-700 text-white text-xs tracking-[0.14em] uppercase font-medium px-5 py-2.5 rounded transition-colors">
             <Upload size={13} /> Upload to R2
           </button>
           <input ref={fileRef} type="file" multiple accept="image/*,video/*"
@@ -330,7 +264,7 @@ export default function AdminMedia() {
                   <button onClick={() => setAddUrlMode(false)}
                     className="flex-1 bg-white/10 text-white text-xs uppercase tracking-wide py-2.5 rounded">Cancel</button>
                   <button onClick={addExternalUrl}
-                    className="flex-1 bg-wine-600 hover:bg-wine-700 text-white text-xs uppercase tracking-wide py-2.5 rounded transition-colors">Add URL</button>
+                    className="flex-1 bg-gold-600 hover:bg-gold-700 text-white text-xs uppercase tracking-wide py-2.5 rounded transition-colors">Add URL</button>
                 </div>
               </div>
             </motion.div>
@@ -342,13 +276,13 @@ export default function AdminMedia() {
       <div className="flex gap-1 overflow-x-auto scrollbar-none bg-white/[0.03] rounded-lg p-1">
         <button onClick={() => setFolder('')}
           className={cn('flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded text-xs font-medium transition-all',
-            folder === '' ? 'bg-wine-600 text-white' : 'text-white/50 hover:text-white')}>
+            folder === '' ? 'bg-gold-600 text-white' : 'text-white/50 hover:text-white')}>
           <FolderOpen size={12} /> All Files
         </button>
         {FOLDERS.map(f => (
           <button key={f} onClick={() => setFolder(f)}
             className={cn('flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded text-xs font-medium capitalize transition-all',
-              folder === f ? 'bg-wine-600 text-white' : 'text-white/50 hover:text-white')}>
+              folder === f ? 'bg-gold-600 text-white' : 'text-white/50 hover:text-white')}>
             <FolderOpen size={12} /> {f}
           </button>
         ))}
@@ -362,7 +296,7 @@ export default function AdminMedia() {
         onClick={() => fileRef.current?.click()}
         className={cn(
           'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all',
-          dragging ? 'border-wine-500 bg-wine-600/10' : 'border-white/10 hover:border-white/25'
+          dragging ? 'border-gold-500 bg-gold-600/10' : 'border-white/10 hover:border-white/25'
         )}
       >
         {compressing ? (
@@ -373,15 +307,15 @@ export default function AdminMedia() {
         ) : uploading ? (
           <div className="flex flex-col items-center gap-4">
             <div className="w-full max-w-xs bg-white/10 rounded-full h-2 overflow-hidden">
-              <div className="h-full bg-wine-500 transition-all duration-300 rounded-full" style={{ width: `${uploadPct}%` }} />
+              <div className="h-full bg-gold-500 transition-all duration-300 rounded-full" style={{ width: `${uploadPct}%` }} />
             </div>
             <p className="text-sm text-white/60">Uploading to Cloudflare R2… {uploadPct}%</p>
           </div>
         ) : (
           <>
-            <Upload size={28} className={cn('mx-auto mb-3', dragging ? 'text-wine-400' : 'text-white/25')} />
+            <Upload size={28} className={cn('mx-auto mb-3', dragging ? 'text-gold-400' : 'text-white/25')} />
             <p className="text-sm text-white/60 mb-1">
-              Drag & drop files here, or <span className="text-wine-400">click to browse</span>
+              Drag & drop files here, or <span className="text-gold-400">click to browse</span>
             </p>
             <p className="text-xs text-white/30">PNG, JPG, WebP, AVIF, MP4 · Stored in Cloudflare R2</p>
           </>
@@ -400,7 +334,7 @@ export default function AdminMedia() {
           {(['all','image','video'] as const).map(t => (
             <button key={t} onClick={() => setTypeFilter(t)}
               className={cn('px-4 py-2 text-xs uppercase tracking-wide transition-colors',
-                typeFilter === t ? 'bg-wine-600 text-white' : 'text-white/40 hover:text-white')}>
+                typeFilter === t ? 'bg-gold-600 text-white' : 'text-white/40 hover:text-white')}>
               {t}
             </button>
           ))}
@@ -450,8 +384,8 @@ export default function AdminMedia() {
                   initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                   onClick={() => setSelected(file)}
                   className={cn(
-                    'group relative bg-white/[0.05] border rounded-lg overflow-hidden cursor-pointer transition-all hover:border-wine-500/50',
-                    selected?.key === file.key ? 'border-wine-500 ring-1 ring-wine-500/40' : 'border-white/10'
+                    'group relative bg-white/[0.05] border rounded-lg overflow-hidden cursor-pointer transition-all hover:border-gold-500/50',
+                    selected?.key === file.key ? 'border-gold-500 ring-1 ring-gold-500/40' : 'border-white/10'
                   )}>
                   <div className="aspect-square bg-white/[0.03] flex items-center justify-center overflow-hidden">
                     {file.type === 'image' && file.url ? (
@@ -471,7 +405,7 @@ export default function AdminMedia() {
                   {/* Hover actions */}
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                     <button onClick={e => { e.stopPropagation(); copyUrl(file.url); }}
-                      className="p-2 bg-white/20 hover:bg-wine-600 rounded transition-colors"
+                      className="p-2 bg-white/20 hover:bg-gold-600 rounded transition-colors"
                       title="Copy URL">
                       {copied && selected?.key === file.key
                         ? <Check size={14} className="text-green-400" />
@@ -501,7 +435,7 @@ export default function AdminMedia() {
                   {filtered.map(file => (
                     <tr key={file.key} onClick={() => setSelected(file)}
                       className={cn('border-b border-white/5 cursor-pointer hover:bg-white/[0.03] transition-colors',
-                        selected?.key === file.key && 'bg-wine-600/10')}>
+                        selected?.key === file.key && 'bg-gold-600/10')}>
                       <td className="px-5 py-3.5 flex items-center gap-3">
                         <div className="w-10 h-10 bg-white/[0.05] rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {file.type === 'image' && file.url
@@ -519,7 +453,7 @@ export default function AdminMedia() {
                       <td className="px-5 py-3.5">
                         <div className="flex gap-2">
                           <button onClick={e => { e.stopPropagation(); copyUrl(file.url); }}
-                            className="p-1.5 text-white/30 hover:text-wine-300 transition-colors">
+                            className="p-1.5 text-white/30 hover:text-gold-300 transition-colors">
                             <Copy size={13} />
                           </button>
                           <button onClick={e => { e.stopPropagation(); deleteFile(file.key); }}
@@ -571,7 +505,7 @@ export default function AdminMedia() {
               </div>
               <div className="p-4 border-t border-white/10 space-y-2">
                 <button onClick={() => copyUrl(selected.url)}
-                  className="w-full flex items-center justify-center gap-2 bg-wine-600 hover:bg-wine-700 text-white text-xs uppercase tracking-wide py-2.5 rounded transition-colors">
+                  className="w-full flex items-center justify-center gap-2 bg-gold-600 hover:bg-gold-700 text-white text-xs uppercase tracking-wide py-2.5 rounded transition-colors">
                   {copied ? <><Check size={12} /> Copied!</> : <><Copy size={12} /> Copy URL</>}
                 </button>
                 {selected.url && (

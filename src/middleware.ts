@@ -18,6 +18,11 @@ export default auth((req) => {
     return NextResponse.redirect(new URL(`/account?callbackUrl=${req.nextUrl.pathname}`, req.url));
   }
 
+  const mustChangePassword = (req.auth?.user as { mustChangePassword?: boolean })?.mustChangePassword;
+  if (mustChangePassword && req.nextUrl.pathname !== '/admin/change-password') {
+    return NextResponse.redirect(new URL('/admin/change-password', req.url));
+  }
+
   const section = sectionForPath(req.nextUrl.pathname);
   if (!canAccessSection(role, section)) {
     return NextResponse.redirect(new URL('/admin?denied=1', req.url));

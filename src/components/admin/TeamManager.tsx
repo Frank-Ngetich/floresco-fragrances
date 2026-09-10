@@ -130,7 +130,7 @@ export function TeamManager() {
 
       {/* Temp password reveal */}
       {reveal && (
-        <div className="bg-wine-600/10 border border-wine-600/30 rounded-lg p-5 space-y-3">
+        <div className="bg-gold-600/10 border border-gold-600/30 rounded-lg p-5 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-sm font-medium text-white">
@@ -143,7 +143,7 @@ export function TeamManager() {
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <code className="flex-1 bg-black/30 border border-white/10 rounded px-3 py-2 text-sm text-wine-200 font-mono tracking-wide">
+            <code className="flex-1 bg-black/30 border border-white/10 rounded px-3 py-2 text-sm text-gold-200 font-mono tracking-wide">
               {reveal.password}
             </code>
             <button onClick={copyPassword}
@@ -162,7 +162,7 @@ export function TeamManager() {
           <p className="text-xs text-white/40 mt-0.5">Staff, Manager and Owner accounts with access to this admin panel.</p>
         </div>
         <button onClick={() => setShowForm(s => !s)}
-          className="flex items-center gap-1.5 bg-wine-600 hover:bg-wine-700 text-white text-xs px-3.5 py-2 rounded transition-colors flex-shrink-0">
+          className="flex items-center gap-1.5 bg-gold-600 hover:bg-gold-700 text-white text-xs px-3.5 py-2 rounded transition-colors flex-shrink-0">
           <UserPlus size={13} /> Add Team Member
         </button>
       </div>
@@ -190,7 +190,7 @@ export function TeamManager() {
           </div>
           <div className="flex items-center gap-3">
             <button onClick={createMember} disabled={creating}
-              className="flex items-center gap-2 bg-wine-600 hover:bg-wine-700 disabled:opacity-60 text-white text-xs tracking-[0.14em] uppercase font-medium px-4 py-2 rounded transition-colors">
+              className="flex items-center gap-2 bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-xs tracking-[0.14em] uppercase font-medium px-4 py-2 rounded transition-colors">
               {creating ? <RefreshCw size={13} className="animate-spin" /> : <UserPlus size={13} />}
               {creating ? 'Creating…' : 'Create Account'}
             </button>

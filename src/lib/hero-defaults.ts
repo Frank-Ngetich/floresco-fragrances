@@ -15,7 +15,6 @@ export interface HeroData {
   bgTo: string;
   showParticles: boolean;
   showOrbitRings: boolean;
-  showRatingBadge: boolean;
   videoUrl: string;
   useVideo: boolean;
   heroImageUrl: string;
@@ -42,7 +41,6 @@ export const DEFAULT_HERO: HeroData = {
   bgTo:   '#EDE3DB',
   showParticles:   true,
   showOrbitRings:  true,
-  showRatingBadge: true,
   videoUrl: '',
   useVideo: false,
   heroImageUrl: '',

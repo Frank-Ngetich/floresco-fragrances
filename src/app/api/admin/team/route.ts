@@ -65,10 +65,11 @@ export async function POST(req: NextRequest) {
       existing.name = name.trim();
       existing.role = newRole;
       existing.password = passwordHash;
+      existing.mustChangePassword = true;
       await existing.save();
       member = existing;
     } else {
-      member = await User.create({ name: name.trim(), email: normalised, role: newRole, password: passwordHash });
+      member = await User.create({ name: name.trim(), email: normalised, role: newRole, password: passwordHash, mustChangePassword: true });
     }
 
     return NextResponse.json({

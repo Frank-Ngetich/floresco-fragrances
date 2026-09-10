@@ -13,7 +13,7 @@ export const PRODUCTS_DATA = [
     sizes: [{ size: '50ml', price: 8500, stock: 12, sku: 'VOI-50' }, { size: '100ml', price: 14500, stock: 8, sku: 'VOI-100' }],
     images: [{ url: '', alt: 'Velvet Oud Intense 50ml', isPrimary: true }],
     color1: '#3A2C22', color2: '#7A5A38',
-    featured: true, badge: 'Bestseller', rating: 4.9, reviewCount: 128,
+    featured: true, badge: 'Bestseller', rating: 0, reviewCount: 0,
     seo: { metaTitle: 'Velvet Oud Intense | Floresco', metaDescription: 'Deep Cambodian oud with damask rose and amber. The signature of the house.' },
   },
   {
@@ -27,7 +27,7 @@ export const PRODUCTS_DATA = [
     sizes: [{ size: '30ml', price: 8200, stock: 6, sku: 'BDN-30' }, { size: '50ml', price: 12800, stock: 15, sku: 'BDN-50' }, { size: '100ml', price: 18500, stock: 7, sku: 'BDN-100' }],
     images: [{ url: '', alt: 'Bloom de Nuit', isPrimary: true }],
     color1: '#C77B95', color2: '#EFC2D0',
-    featured: true, badge: 'New', rating: 4.8, reviewCount: 94,
+    featured: true, badge: 'New', rating: 0, reviewCount: 0,
     seo: { metaTitle: 'Bloom de Nuit | Floresco', metaDescription: 'A night-blooming floral with jasmine and vanilla.' },
   },
   {
@@ -41,7 +41,7 @@ export const PRODUCTS_DATA = [
     sizes: [{ size: '50ml', price: 11200, stock: 10, sku: 'NEH-50' }, { size: '100ml', price: 15800, stock: 5, sku: 'NEH-100' }],
     images: [{ url: '', alt: 'Noir Élégant Homme', isPrimary: true }],
     color1: '#222226', color2: '#5B5B66',
-    featured: true, rating: 4.7, reviewCount: 76,
+    featured: true, rating: 0, reviewCount: 0,
     seo: { metaTitle: 'Noir Élégant Homme | Floresco', metaDescription: 'A structured masculine fragrance of lavender, iris, and tonka.' },
   },
   {
@@ -55,7 +55,7 @@ export const PRODUCTS_DATA = [
     sizes: [{ size: '50ml', price: 7200, stock: 20, sku: 'RD-50' }, { size: '100ml', price: 12500, stock: 14, sku: 'RD-100' }],
     images: [{ url: '', alt: 'Rose Damascena', isPrimary: true }],
     color1: '#8E2C48', color2: '#D66E8C',
-    featured: true, rating: 4.9, reviewCount: 156,
+    featured: true, rating: 0, reviewCount: 0,
     seo: { metaTitle: 'Rose Damascena | Floresco', metaDescription: 'Turkish rose absolute with honey and white musk.' },
   },
   {
@@ -69,7 +69,7 @@ export const PRODUCTS_DATA = [
     sizes: [{ size: '60ml', price: 12500, stock: 8, sku: 'SM-60' }, { size: '100ml', price: 16800, stock: 6, sku: 'SM-100' }],
     images: [{ url: '', alt: 'Sauvage Moderne EDP', isPrimary: true }],
     color1: '#1B2B45', color2: '#4A6FA5',
-    featured: false, rating: 4.8, reviewCount: 203,
+    featured: false, rating: 0, reviewCount: 0,
     seo: { metaTitle: 'Sauvage Moderne EDP | Floresco', metaDescription: 'Bergamot and ambroxan — a modern masculine icon.' },
   },
   {
@@ -83,7 +83,7 @@ export const PRODUCTS_DATA = [
     sizes: [{ size: '35ml', price: 11800, stock: 9, sku: 'MC-35' }, { size: '50ml', price: 15800, stock: 12, sku: 'MC-50' }, { size: '100ml', price: 22000, stock: 4, sku: 'MC-100' }],
     images: [{ url: '', alt: 'Mademoiselle Chérie', isPrimary: true }],
     color1: '#A8323E', color2: '#E8909A',
-    featured: false, badge: "Editor's Pick", rating: 4.9, reviewCount: 187,
+    featured: false, badge: "Editor's Pick", rating: 0, reviewCount: 0,
     seo: { metaTitle: 'Mademoiselle Chérie | Floresco', metaDescription: 'Orange blossom and rose — effortless chic.' },
   },
   {
@@ -97,7 +97,7 @@ export const PRODUCTS_DATA = [
     sizes: [{ size: '50ml', price: 9800, stock: 11, sku: 'AR-50' }, { size: '100ml', price: 14200, stock: 7, sku: 'AR-100' }],
     images: [{ url: '', alt: 'Amber Royale', isPrimary: true }],
     color1: '#8A5A1E', color2: '#D9A84E',
-    featured: false, rating: 4.7, reviewCount: 91,
+    featured: false, rating: 0, reviewCount: 0,
     seo: { metaTitle: 'Amber Royale | Floresco', metaDescription: 'Golden amber and saffron — unisex luxury.' },
   },
   {
@@ -111,7 +111,7 @@ export const PRODUCTS_DATA = [
     sizes: [{ size: '50ml', price: 6900, stock: 18, sku: 'CV-50' }, { size: '100ml', price: 10500, stock: 12, sku: 'CV-100' }],
     images: [{ url: '', alt: 'Citrus Verde', isPrimary: true }],
     color1: '#2E5D3A', color2: '#7FB77E',
-    featured: false, badge: 'Fresh Pick', rating: 4.6, reviewCount: 63,
+    featured: false, badge: 'Fresh Pick', rating: 0, reviewCount: 0,
     seo: { metaTitle: 'Citrus Verde | Floresco', metaDescription: 'Lime, green tea and vetiver — a fresh unisex fragrance.' },
   },
   {
@@ -125,7 +125,7 @@ export const PRODUCTS_DATA = [
     sizes: [{ size: '30ml', price: 8400, stock: 6, sku: 'OM-30' }, { size: '50ml', price: 12500, stock: 4, sku: 'OM-50' }],
     images: [{ url: '', alt: 'Oud Malaki', isPrimary: true }],
     color1: '#2B1F1A', color2: '#6E4A2F',
-    featured: false, rating: 4.9, reviewCount: 74,
+    featured: false, rating: 0, reviewCount: 0,
     seo: { metaTitle: 'Oud Malaki | Floresco', metaDescription: 'Aged Cambodian oud — royal and uncompromising.' },
   },
   {
@@ -139,7 +139,7 @@ export const PRODUCTS_DATA = [
     sizes: [{ size: '50ml', price: 8500, stock: 14, sku: 'AMH-50' }, { size: '100ml', price: 12200, stock: 8, sku: 'AMH-100' }],
     images: [{ url: '', alt: 'Aqua Marine Homme', isPrimary: true }],
     color1: '#0E4C63', color2: '#57B3C9',
-    featured: false, rating: 4.5, reviewCount: 112,
+    featured: false, rating: 0, reviewCount: 0,
     seo: { metaTitle: 'Aqua Marine Homme | Floresco', metaDescription: 'Marine freshness — sea, neroli and clean musk.' },
   },
   {
@@ -153,7 +153,7 @@ export const PRODUCTS_DATA = [
     sizes: [{ size: '50ml', price: 8800, stock: 16, sku: 'FDI-50' }, { size: '100ml', price: 13500, stock: 9, sku: 'FDI-100' }],
     images: [{ url: '', alt: "Fleur d'Ivoire", isPrimary: true }],
     color1: '#B08D3C', color2: '#EBD9A8',
-    featured: false, rating: 4.8, reviewCount: 128,
+    featured: false, rating: 0, reviewCount: 0,
     seo: { metaTitle: "Fleur d'Ivoire | Floresco", metaDescription: 'Peony, lychee and musk — softly radiant.' },
   },
   {
@@ -167,7 +167,7 @@ export const PRODUCTS_DATA = [
     sizes: [{ size: '50ml', price: 11200, stock: 13, sku: 'SM2-50' }, { size: '100ml', price: 16500, stock: 6, sku: 'SM2-100' }],
     images: [{ url: '', alt: 'Santal Mystique', isPrimary: true }],
     color1: '#6B4A2E', color2: '#C29B6C',
-    featured: false, badge: 'Staff Pick', rating: 4.8, reviewCount: 89,
+    featured: false, badge: 'Staff Pick', rating: 0, reviewCount: 0,
     seo: { metaTitle: 'Santal Mystique | Floresco', metaDescription: 'Australian sandalwood and cardamom — meditative and warm.' },
   },
 ];

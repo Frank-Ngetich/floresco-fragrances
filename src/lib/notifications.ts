@@ -158,6 +158,17 @@ export async function notifyOrderStatusChange(order: IOrder, note?: string) {
   }
 }
 
+export async function notifyPasswordReset(email: string, name: string, resetUrl: string) {
+  const html = emailWrapper(`
+    <h2>Reset your password</h2>
+    <p>Hi ${name.split(' ')[0]},</p>
+    <p>We received a request to reset your Floresco account password. This link expires in 30 minutes.</p>
+    <a href="${resetUrl}" class="btn">Reset Password</a>
+    <p>If you didn't request this, you can safely ignore this email — your password won't be changed.</p>
+  `);
+  await sendEmail(email, 'Reset your Floresco password', html);
+}
+
 export async function notifyInquiryReceived(email: string, name: string) {
   const html = emailWrapper(`
     <h2>Thank you for reaching out</h2>

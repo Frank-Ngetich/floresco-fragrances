@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Instagram, Facebook } from 'lucide-react';
+import { NewsletterForm } from './NewsletterForm';
 
 const SHOP_LINKS = [
   { href: '/shop?cat=women',      label: 'Women' },
@@ -21,7 +22,7 @@ const CUSTOMER_LINKS = [
   { href: '/cart',          label: 'Shopping Bag' },
   { href: '/contact#faq',   label: 'FAQ' },
   { href: '/contact#ship',  label: 'Shipping & Returns' },
-  { href: '/contact#track', label: 'Track Your Order' },
+  { href: '/orders',        label: 'Track Your Order' },
 ];
 
 export function Footer() {
@@ -35,16 +36,7 @@ export function Footer() {
             <h3 className="font-display text-2xl text-cream-100 mb-2">First to know, first to have.</h3>
             <p className="text-cream-500 text-sm">New arrivals, private previews and fragrance stories — occasionally.</p>
           </div>
-          <form className="flex gap-0 border-b border-cream-600 pb-2">
-            <input
-              type="email"
-              placeholder="Your email address"
-              className="flex-1 bg-transparent text-cream-200 placeholder:text-cream-600 text-sm focus:outline-none py-1"
-            />
-            <button type="submit" className="text-[0.68rem] tracking-[0.2em] uppercase text-burgundy-300 hover:text-burgundy-200 transition-colors font-medium whitespace-nowrap">
-              Subscribe →
-            </button>
-          </form>
+          <NewsletterForm />
         </div>
       </div>
 
@@ -110,10 +102,10 @@ export function Footer() {
         {/* Base */}
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-cream-600 text-xs tracking-wide">
-            © 2026 Floresco Fragrances & Accessories · Kapsoya Business Park, Eldoret, Kenya
+            © {new Date().getFullYear()} Floresco Fragrances & Accessories · Kapsoya Business Park, Eldoret, Kenya
           </p>
           <div className="flex items-center gap-3">
-            {['M-Pesa', 'Visa', 'Mastercard', 'Cash on Delivery'].map((p) => (
+            {['M-Pesa', 'Cash on Delivery'].map((p) => (
               <span key={p} className="border border-white/15 text-cream-600 text-[0.6rem] tracking-wider uppercase px-2.5 py-1">
                 {p}
               </span>

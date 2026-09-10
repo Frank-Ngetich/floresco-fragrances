@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Edit2, Trash2, Eye, ToggleLeft, ToggleRight, ChevronDown, Package, Filter } from 'lucide-react';
-import { BottleSVG } from '@/components/ui/BottleSVG';
+import { ProductImage } from '@/components/ui/ProductImage';
 import { formatKES, cn } from '@/lib/utils';
 import { PRODUCTS_DATA } from '@/lib/products-data';
 import type { IProduct } from '@/types';
@@ -87,7 +87,7 @@ export default function AdminProducts() {
           <p className="text-white/50 text-sm mt-1">{products.length} total · {active.length} active · {lowStock.length} low stock</p>
         </div>
         <Link href="/admin/products/new"
-          className="inline-flex items-center gap-2 bg-wine-600 hover:bg-wine-700 text-white text-xs tracking-[0.16em] uppercase font-medium px-5 py-2.5 rounded transition-colors self-start">
+          className="inline-flex items-center gap-2 bg-gold-600 hover:bg-gold-700 text-white text-xs tracking-[0.16em] uppercase font-medium px-5 py-2.5 rounded transition-colors self-start">
           <Plus size={14} /> Add Product
         </Link>
       </div>
@@ -161,8 +161,8 @@ export default function AdminProducts() {
                         className="border-b border-white/5 hover:bg-white/[0.03] transition-colors group">
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-12 bg-white/[0.06] flex items-center justify-center flex-shrink-0 rounded">
-                              <BottleSVG color1={p.color1} color2={p.color2} id={`adm-${p._id}`} className="h-10 w-auto" showLabel={false} />
+                            <div className="relative w-10 h-12 bg-white/[0.06] flex items-center justify-center flex-shrink-0 rounded overflow-hidden">
+                              <ProductImage src={p.images?.find(i=>i.isPrimary)?.url || p.images?.[0]?.url || null} alt={p.name} color1={p.color1} color2={p.color2} fill className="object-cover" sizes="40px" />
                             </div>
                             <div>
                               <div className="text-sm text-white font-medium">{p.name}</div>
@@ -199,7 +199,7 @@ export default function AdminProducts() {
                               <Eye size={14} />
                             </Link>
                             <Link href={`/admin/products/${p._id}`}
-                              className="p-1.5 text-white/40 hover:text-wine-300 transition-colors" title="Edit">
+                              className="p-1.5 text-white/40 hover:text-gold-300 transition-colors" title="Edit">
                               <Edit2 size={14} />
                             </Link>
                             <button onClick={() => deleteProduct(p._id)} disabled={deleting === p._id}
@@ -227,8 +227,8 @@ export default function AdminProducts() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {filtered.map(p => (
             <div key={p._id} className="bg-white/[0.04] border border-white/10 rounded-lg overflow-hidden group">
-              <div className="bg-white/[0.04] p-4 flex items-center justify-center h-32">
-                <BottleSVG color1={p.color1} color2={p.color2} id={`grid-${p._id}`} className="h-24 w-auto" showLabel={false} />
+              <div className="relative bg-white/[0.04] h-32 overflow-hidden">
+                <ProductImage src={p.images?.find(i=>i.isPrimary)?.url || p.images?.[0]?.url || null} alt={p.name} color1={p.color1} color2={p.color2} fill className="object-cover" sizes="200px" />
               </div>
               <div className="p-3">
                 <div className="text-xs text-white/40 mb-0.5">{p.brand}</div>
@@ -236,7 +236,7 @@ export default function AdminProducts() {
                 <div className="text-xs text-white/60">{formatKES(p.sizes[0].price)}</div>
               </div>
               <div className="flex border-t border-white/10">
-                <Link href={`/admin/products/${p._id}`} className="flex-1 py-2 text-center text-xs text-white/40 hover:text-wine-300 hover:bg-white/[0.04] transition-all">
+                <Link href={`/admin/products/${p._id}`} className="flex-1 py-2 text-center text-xs text-white/40 hover:text-gold-300 hover:bg-white/[0.04] transition-all">
                   Edit
                 </Link>
                 <button onClick={() => toggleStatus(p._id, p.status)}
@@ -248,9 +248,9 @@ export default function AdminProducts() {
           ))}
           {/* Add new card */}
           <Link href="/admin/products/new"
-            className="border-2 border-dashed border-white/15 rounded-lg flex flex-col items-center justify-center p-6 text-center hover:border-wine-600/50 hover:bg-wine-600/5 transition-all group min-h-[180px]">
-            <Plus size={24} className="text-white/20 group-hover:text-wine-400 transition-colors mb-2" />
-            <span className="text-xs text-white/30 group-hover:text-wine-400 transition-colors">Add Product</span>
+            className="border-2 border-dashed border-white/15 rounded-lg flex flex-col items-center justify-center p-6 text-center hover:border-gold-600/50 hover:bg-gold-600/5 transition-all group min-h-[180px]">
+            <Plus size={24} className="text-white/20 group-hover:text-gold-400 transition-colors mb-2" />
+            <span className="text-xs text-white/30 group-hover:text-gold-400 transition-colors">Add Product</span>
           </Link>
         </div>
       )}

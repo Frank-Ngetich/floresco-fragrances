@@ -1,52 +1,34 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Save, RefreshCw, Check, Building, CreditCard, Bell, Palette, Globe, Shield, Users } from 'lucide-react';
+import { Save, RefreshCw, Check, CreditCard, Bell, Shield, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TeamManager } from '@/components/admin/TeamManager';
 
-type Tab = 'business'|'payments'|'notifications'|'appearance'|'team'|'advanced';
+type Tab = 'payments'|'notifications'|'team'|'advanced';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id:'business',      label:'Business Info',    icon: Building },
   { id:'payments',      label:'Payment Methods',  icon: CreditCard },
   { id:'notifications', label:'Notifications',    icon: Bell },
-  { id:'appearance',    label:'Appearance',       icon: Palette },
   { id:'team',          label:'Team',             icon: Users },
   { id:'advanced',      label:'Advanced',         icon: Shield },
 ];
 
 export default function AdminSettings() {
-  const [tab,      setTab]      = useState<Tab>('business');
+  const [tab,      setTab]      = useState<Tab>('payments');
   const [saving,   setSaving]   = useState(false);
   const [saved,    setSaved]    = useState(false);
   const [loading,  setLoading]  = useState(true);
 
-  const [business, setBusiness] = useState({
-    name:    'Floresco Fragrances & Accessories',
-    tagline: "Eldoret's Luxury Fragrance House",
-    email:   'hello@florescofragrances.co.ke',
-    phone:   '+254 7XX XXX XXX',
-    whatsapp:'+254 7XX XXX XXX',
-    address: 'Kapsoya Business Park, Eldoret, Uasin Gishu County',
-    city:    'Eldoret',
-    county:  'Uasin Gishu',
-    country: 'Kenya',
-    instagram:'florescofragrances',
-    facebook: 'florescofragrances',
-    tiktok:   '',
-    twitter:  '',
-  });
-
   const [payments, setPayments] = useState({
     mpesaEnabled:   true,
     mpesaShortcode: '174379',
-    cardEnabled:    true,
+    cardEnabled:    false,
     codEnabled:     true,
     codMaxAmount:   15000,
-    bankEnabled:    true,
-    bankName:       'Equity Bank',
-    bankAccount:    '0123456789',
-    bankBranch:     'Eldoret',
+    bankEnabled:    false,
+    bankName:       '',
+    bankAccount:    '',
+    bankBranch:     '',
     freeDeliveryMin:10000,
     eldoretFee:     0,
     nairobi:        500,
@@ -69,27 +51,14 @@ export default function AdminSettings() {
     newInquiryAlert: true,
   });
 
-  const [appearance, setAppearance] = useState({
-    primaryColor:    '#B02837',
-    secondaryColor:  '#B5924C',
-    logoUrl:         '',
-    faviconUrl:      '',
-    announcementBar: true,
-    announcementText:'Complimentary delivery in Eldoret · Countrywide via courier · Pay via M-Pesa',
-    footerText:      '© 2026 Floresco Fragrances & Accessories · Kapsoya Business Park, Eldoret, Kenya',
-    maintenanceMode: false,
-  });
-
   useEffect(() => {
     fetch('/api/admin/site-settings?key=settings')
       .then(r => r.json())
       .then(d => {
         const v = d?.value;
         if (v) {
-          if (v.business)    setBusiness(p => ({ ...p, ...v.business }));
-          if (v.payments)    setPayments(p => ({ ...p, ...v.payments }));
-          if (v.notifs)      setNotifs(p => ({ ...p, ...v.notifs }));
-          if (v.appearance)  setAppearance(p => ({ ...p, ...v.appearance }));
+          if (v.payments) setPayments(p => ({ ...p, ...v.payments }));
+          if (v.notifs)   setNotifs(p => ({ ...p, ...v.notifs }));
         }
       })
       .catch(() => {})
@@ -102,7 +71,7 @@ export default function AdminSettings() {
       await fetch('/api/admin/site-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'settings', value: { business, payments, notifs, appearance } }),
+        body: JSON.stringify({ key: 'settings', value: { payments, notifs } }),
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -110,10 +79,8 @@ export default function AdminSettings() {
     setSaving(false);
   }
 
-  function upB(k: string, v: string | number | boolean) { setBusiness(p => ({ ...p, [k]: v })); setSaved(false); }
   function upP(k: string, v: string | number | boolean) { setPayments(p => ({ ...p, [k]: v })); setSaved(false); }
   function upN(k: string, v: string | number | boolean) { setNotifs(p => ({ ...p, [k]: v })); setSaved(false); }
-  function upA(k: string, v: string | boolean) { setAppearance(p => ({ ...p, [k]: v })); setSaved(false); }
 
   return (
     <div className="space-y-6">
@@ -121,10 +88,10 @@ export default function AdminSettings() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-display">Site Settings</h1>
-          <p className="text-white/50 text-sm mt-1">Configure your store — changes apply immediately after saving</p>
+          <p className="text-white/50 text-sm mt-1">Store operations — branding and page content are managed by your developer</p>
         </div>
         <button onClick={save} disabled={saving || loading}
-          className="inline-flex items-center gap-2 bg-wine-600 hover:bg-wine-700 disabled:opacity-60 text-white text-xs tracking-[0.14em] uppercase font-medium px-5 py-2.5 rounded transition-colors self-start">
+          className="inline-flex items-center gap-2 bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-xs tracking-[0.14em] uppercase font-medium px-5 py-2.5 rounded transition-colors self-start">
           {saving ? <RefreshCw size={13} className="animate-spin" /> : saved ? <Check size={13} /> : <Save size={13} />}
           {loading ? 'Loading…' : saving ? 'Saving…' : saved ? 'Saved!' : 'Save Settings'}
         </button>
@@ -136,7 +103,7 @@ export default function AdminSettings() {
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={cn('flex items-center gap-2.5 px-3 py-2.5 rounded text-sm whitespace-nowrap text-left transition-all flex-shrink-0',
-                tab===t.id ? 'bg-wine-600 text-white' : 'text-white/50 hover:text-white hover:bg-white/[0.05]')}>
+                tab===t.id ? 'bg-gold-600 text-white' : 'text-white/50 hover:text-white hover:bg-white/[0.05]')}>
               <t.icon size={15} strokeWidth={1.6} className="flex-shrink-0" />
               {t.label}
             </button>
@@ -144,32 +111,6 @@ export default function AdminSettings() {
         </nav>
 
         <div className="flex-1 min-w-0">
-
-          {/* BUSINESS */}
-          {tab === 'business' && (
-            <Section title="Business Information">
-              <Grid2>
-                <F label="Business Name"><input value={business.name} onChange={e => upB('name',e.target.value)} className="admin-input" /></F>
-                <F label="Tagline"><input value={business.tagline} onChange={e => upB('tagline',e.target.value)} className="admin-input" /></F>
-                <F label="Email"><input type="email" value={business.email} onChange={e => upB('email',e.target.value)} className="admin-input" /></F>
-                <F label="Phone"><input value={business.phone} onChange={e => upB('phone',e.target.value)} className="admin-input" /></F>
-                <F label="WhatsApp"><input value={business.whatsapp} onChange={e => upB('whatsapp',e.target.value)} className="admin-input" /></F>
-                <F label="City"><input value={business.city} onChange={e => upB('city',e.target.value)} className="admin-input" /></F>
-              </Grid2>
-              <F label="Full Address">
-                <textarea rows={2} value={business.address} onChange={e => upB('address',e.target.value)} className="admin-input resize-none" />
-              </F>
-              <div className="border-t border-white/10 pt-5 mt-5">
-                <div className="text-xs uppercase tracking-[0.16em] text-white/40 mb-4">Social Media Handles</div>
-                <Grid2>
-                  <F label="Instagram"><input value={business.instagram} onChange={e => upB('instagram',e.target.value)} className="admin-input" placeholder="username (no @)" /></F>
-                  <F label="Facebook"><input value={business.facebook} onChange={e => upB('facebook',e.target.value)} className="admin-input" placeholder="page name" /></F>
-                  <F label="TikTok"><input value={business.tiktok} onChange={e => upB('tiktok',e.target.value)} className="admin-input" placeholder="username (no @)" /></F>
-                  <F label="Twitter / X"><input value={business.twitter} onChange={e => upB('twitter',e.target.value)} className="admin-input" placeholder="handle (no @)" /></F>
-                </Grid2>
-              </div>
-            </Section>
-          )}
 
           {/* PAYMENTS */}
           {tab === 'payments' && (
@@ -184,6 +125,7 @@ export default function AdminSettings() {
               </Section>
               <Section title="Card Payments (Flutterwave)">
                 <Toggle label="Enable card payments" checked={payments.cardEnabled} onChange={v => upP('cardEnabled',v)} />
+                <p className="text-xs text-white/35">Not yet connected — talk to your developer before enabling this.</p>
               </Section>
               <Section title="Cash on Delivery">
                 <Toggle label="Enable COD" checked={payments.codEnabled} onChange={v => upP('codEnabled',v)} />
@@ -195,6 +137,7 @@ export default function AdminSettings() {
               </Section>
               <Section title="Bank Transfer">
                 <Toggle label="Enable bank transfer" checked={payments.bankEnabled} onChange={v => upP('bankEnabled',v)} />
+                <p className="text-xs text-white/35 mb-2">Not yet connected — talk to your developer before enabling this.</p>
                 {payments.bankEnabled && (
                   <Grid2>
                     <F label="Bank Name"><input value={payments.bankName} onChange={e => upP('bankName',e.target.value)} className="admin-input" /></F>
@@ -253,60 +196,6 @@ export default function AdminSettings() {
             </div>
           )}
 
-          {/* APPEARANCE */}
-          {tab === 'appearance' && (
-            <div className="space-y-5">
-              <Section title="Brand Colors">
-                <Grid2>
-                  <F label="Primary Color (Wine Red)">
-                    <div className="flex gap-2">
-                      <input type="color" value={appearance.primaryColor} onChange={e => upA('primaryColor',e.target.value)}
-                        className="w-10 h-10 rounded border border-white/20 bg-transparent cursor-pointer" />
-                      <input value={appearance.primaryColor} onChange={e => upA('primaryColor',e.target.value)} className="admin-input font-mono" />
-                    </div>
-                  </F>
-                  <F label="Gold Accent Color">
-                    <div className="flex gap-2">
-                      <input type="color" value={appearance.secondaryColor} onChange={e => upA('secondaryColor',e.target.value)}
-                        className="w-10 h-10 rounded border border-white/20 bg-transparent cursor-pointer" />
-                      <input value={appearance.secondaryColor} onChange={e => upA('secondaryColor',e.target.value)} className="admin-input font-mono" />
-                    </div>
-                  </F>
-                </Grid2>
-              </Section>
-              <Section title="Logo & Favicon">
-                <Grid2>
-                  <F label="Logo URL"><input value={appearance.logoUrl} onChange={e => upA('logoUrl',e.target.value)} className="admin-input" placeholder="Leave blank to use text logo" /></F>
-                  <F label="Favicon URL"><input value={appearance.faviconUrl} onChange={e => upA('faviconUrl',e.target.value)} className="admin-input" /></F>
-                </Grid2>
-                <p className="text-xs text-white/35">
-                  Homepage hero text, photo/video and layout are managed separately in <a href="/admin/hero" className="text-wine-400 hover:text-wine-300">Hero Section Editor</a>.
-                </p>
-              </Section>
-              <Section title="Announcement Bar">
-                <Toggle label="Show announcement bar" checked={appearance.announcementBar} onChange={v => upA('announcementBar',v)} />
-                {appearance.announcementBar && (
-                  <F label="Announcement Text">
-                    <input value={appearance.announcementText} onChange={e => upA('announcementText',e.target.value)} className="admin-input" />
-                  </F>
-                )}
-              </Section>
-              <Section title="Footer">
-                <F label="Footer Copyright Text">
-                  <input value={appearance.footerText} onChange={e => upA('footerText',e.target.value)} className="admin-input" />
-                </F>
-              </Section>
-              <Section title="Maintenance">
-                <Toggle label="Enable maintenance mode (hides store from public)" checked={appearance.maintenanceMode} onChange={v => upA('maintenanceMode',v)} />
-                {appearance.maintenanceMode && (
-                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 text-sm text-amber-300">
-                    ⚠️ Store is currently in maintenance mode. Visitors will see a "coming soon" page. Admin login still works.
-                  </div>
-                )}
-              </Section>
-            </div>
-          )}
-
           {/* TEAM */}
           {tab === 'team' && <TeamManager />}
 
@@ -325,18 +214,6 @@ export default function AdminSettings() {
                 <div className="bg-white/[0.04] border border-white/10 rounded-lg p-5">
                   <div className="font-medium text-white mb-2">Auth Secret</div>
                   <code className="text-xs text-white/50">AUTH_SECRET configured in .env.local</code>
-                </div>
-                <div className="bg-red-500/10 border border-red-500/25 rounded-lg p-5">
-                  <div className="font-medium text-red-300 mb-2">Danger Zone</div>
-                  <p className="text-xs text-white/40 mb-3">These actions cannot be undone.</p>
-                  <div className="flex flex-wrap gap-3">
-                    <button className="text-xs border border-red-500/40 text-red-400 hover:bg-red-500/10 px-4 py-2 rounded transition-colors">
-                      Clear All Sessions
-                    </button>
-                    <button className="text-xs border border-red-500/40 text-red-400 hover:bg-red-500/10 px-4 py-2 rounded transition-colors">
-                      Reset Cached Data
-                    </button>
-                  </div>
                 </div>
               </div>
             </Section>
@@ -372,7 +249,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
     <label className="flex items-center justify-between gap-4 cursor-pointer py-1.5">
       <span className="text-sm text-white/70">{label}</span>
       <div onClick={() => onChange(!checked)}
-        className={cn('relative w-10 h-5 rounded-full transition-colors cursor-pointer flex-shrink-0', checked ? 'bg-wine-600' : 'bg-white/15')}>
+        className={cn('relative w-10 h-5 rounded-full transition-colors cursor-pointer flex-shrink-0', checked ? 'bg-gold-600' : 'bg-white/15')}>
         <div className={cn('absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all', checked ? 'left-5' : 'left-0.5')} />
       </div>
     </label>

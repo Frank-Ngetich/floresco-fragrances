@@ -4,25 +4,25 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Minus, Plus, Trash2, ArrowRight, Tag, Check } from 'lucide-react';
 import { useCart } from '@/lib/cart-store';
-import { BottleSVG } from '@/components/ui/BottleSVG';
+import { ProductImage } from '@/components/ui/ProductImage';
 import { formatKES } from '@/lib/utils';
+import { calcDiscount } from '@/lib/coupons';
 
 export function CartClient() {
-  const { items, removeItem, updateQuantity, total, setOpen } = useCart();
+  const { items, removeItem, updateQuantity, total, setOpen, discountCode, setDiscountCode } = useCart();
   const [mounted, setMounted] = useState(false);
   const [coupon, setCoupon] = useState('');
-  const [applied, setApplied] = useState(false);
   const [couponErr, setCouponErr] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   if (!mounted) return null;
 
   const subtotal = total();
   const shipping = subtotal >= 10000 || subtotal === 0 ? 0 : 500;
-  const discount = applied ? Math.round(subtotal * 0.1) : 0;
+  const discount = calcDiscount(discountCode, subtotal);
   const orderTotal = subtotal + shipping - discount;
 
   function applyCoupon() {
-    if (coupon.toUpperCase() === 'FLORESCO10') { setApplied(true); setCouponErr(false); }
+    if (calcDiscount(coupon, subtotal) > 0) { setDiscountCode(coupon.trim().toUpperCase()); setCouponErr(false); }
     else { setCouponErr(true); }
   }
 
@@ -58,8 +58,8 @@ export function CartClient() {
                 exit={{ opacity: 0, x: -20, height: 0 }} transition={{ duration: 0.3 }}
                 className="grid grid-cols-[auto_1fr] md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-4 items-center py-7 border-b border-stone/8">
                 <div className="col-span-2 md:col-span-1 flex items-center gap-5">
-                  <div className="w-20 h-24 bg-stone/[0.04] flex items-center justify-center flex-shrink-0">
-                    <BottleSVG color1={item.color1} color2={item.color2} id={`cart-${item.productId}`} className="h-16 w-auto" showLabel={false} />
+                  <div className="relative w-20 h-24 bg-stone/[0.04] flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <ProductImage src={item.image || null} alt={item.name} color1={item.color1} color2={item.color2} fill className="object-cover" sizes="80px" />
                   </div>
                   <div>
                     <div className="text-[0.6rem] tracking-[0.2em] uppercase text-stone/35 mb-1">{item.brand}</div>
@@ -90,11 +90,11 @@ export function CartClient() {
               </div>
               <button onClick={applyCoupon} className="btn-ghost px-5 py-3 text-xs">Apply</button>
             </div>
-            {applied && <div className="text-green-700 text-xs mb-4 flex items-center gap-2"><Check size={12}/>FLORESCO10 — 10% off applied</div>}
+            {discountCode && <div className="text-green-700 text-xs mb-4 flex items-center gap-2"><Check size={12}/>{discountCode} — 10% off applied</div>}
             {couponErr && <div className="text-red-600 text-xs mb-4">Invalid code. Try FLORESCO10.</div>}
             <div className="space-y-3 text-sm mb-6">
               <div className="flex justify-between"><span className="text-stone/50">Subtotal</span><span>{formatKES(subtotal)}</span></div>
-              {applied && <div className="flex justify-between text-green-700"><span>Discount</span><span>−{formatKES(discount)}</span></div>}
+              {discountCode && <div className="flex justify-between text-green-700"><span>Discount</span><span>−{formatKES(discount)}</span></div>}
               <div className="flex justify-between"><span className="text-stone/50">Delivery</span><span>{shipping === 0 ? 'Free' : formatKES(shipping)}</span></div>
               {shipping > 0 && <p className="text-[0.7rem] text-wine-600">Free delivery on orders above KES 10,000</p>}
             </div>
@@ -102,7 +102,7 @@ export function CartClient() {
             <Link href="/checkout" className="btn-primary w-full justify-center group mb-3">
               Checkout <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform"/>
             </Link>
-            <div className="text-center text-[0.65rem] text-stone/35 mt-3">🔒 M-Pesa · Card · Cash on Delivery</div>
+            <div className="text-center text-[0.65rem] text-stone/35 mt-3">🔒 M-Pesa · Cash on Delivery</div>
           </div>
           <div className="border border-stone/10 p-5 space-y-3">
             {[{ i:'✓', t:'100% authentic, every bottle'},{ i:'↩', t:'Returns within 7 days (unopened)'},{ i:'🎁', t:'Gift wrapping at checkout'}].map(r=>(

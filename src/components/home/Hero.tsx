@@ -1,12 +1,12 @@
 'use client';
 import {
   motion, useScroll, useTransform, useMotionValue,
-  useSpring,
+  useSpring, useReducedMotion,
 } from 'framer-motion';
 import { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Star, MapPin, Sparkles } from 'lucide-react';
+import { ArrowRight, MapPin, Sparkles } from 'lucide-react';
 import { DEFAULT_HERO, type HeroData } from '@/lib/hero-defaults';
 
 /* ─── Animation variants ─────────────────────────────── */
@@ -58,6 +58,9 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
   const data = { ...DEFAULT_HERO, ...hero };
   const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const reduceMotion = useReducedMotion();
+  const showParticles = data.showParticles && !reduceMotion;
+  const showOrbitRings = data.showOrbitRings && !reduceMotion;
 
   /* Scroll parallax */
   const { scrollYProgress } = useScroll({
@@ -100,8 +103,8 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
         <div className="absolute inset-0"
           style={{
             background: `
-              radial-gradient(ellipse 80% 70% at 65% 40%, rgba(176,40,55,0.07) 0%, transparent 65%),
-              radial-gradient(ellipse 60% 60% at 20% 70%, rgba(181,146,76,0.06) 0%, transparent 60%),
+              radial-gradient(ellipse 80% 70% at 65% 40%, rgba(138,109,46,0.08) 0%, transparent 65%),
+              radial-gradient(ellipse 60% 60% at 20% 70%, rgba(23,20,15,0.04) 0%, transparent 60%),
               linear-gradient(165deg, ${data.bgFrom} 0%, ${data.bgMid} 50%, ${data.bgTo} 100%)
             `,
           }}
@@ -116,7 +119,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
       </motion.div>
 
       {/* ── Ambient orbs ─────────────────────────────── */}
-      {mounted && (
+      {mounted && !reduceMotion && (
         <>
           <motion.div
             animate={{ scale: [1, 1.25, 1], opacity: [0.2, 0.4, 0.2] }}
@@ -124,7 +127,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
             className="absolute pointer-events-none rounded-full"
             style={{
               width: 700, height: 700, top: '-15%', right: '-5%',
-              background: 'radial-gradient(circle, rgba(176,40,55,0.07) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(138,109,46,0.08) 0%, transparent 70%)',
             }}
           />
           <motion.div
@@ -133,7 +136,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
             className="absolute pointer-events-none rounded-full"
             style={{
               width: 500, height: 500, bottom: '-10%', left: '5%',
-              background: 'radial-gradient(circle, rgba(181,146,76,0.09) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(138,109,46,0.1) 0%, transparent 70%)',
             }}
           />
         </>
@@ -142,19 +145,19 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
       {/* ── Decorative letter ────────────────────────── */}
       <div
         className="absolute right-[-2rem] top-[-3rem] font-display leading-none select-none pointer-events-none hidden lg:block"
-        style={{ fontSize: 'clamp(16rem, 24vw, 38rem)', color: 'rgba(176,40,55,0.032)' }}
+        style={{ fontSize: 'clamp(16rem, 24vw, 38rem)', color: 'rgba(23,20,15,0.028)' }}
       >F</div>
 
       {/* ── Floating particles ───────────────────────── */}
-      {mounted && data.showParticles && PARTICLES.map((p, i) => (
+      {mounted && showParticles && PARTICLES.map((p, i) => (
         <motion.div key={i}
           className="absolute rounded-full pointer-events-none"
           style={{
             width: p.size, height: p.size,
             left: p.left, top: p.top,
             background: p.wine
-              ? 'rgba(176,40,55,0.3)'
-              : 'rgba(181,146,76,0.35)',
+              ? 'rgba(138,109,46,0.4)'
+              : 'rgba(173,134,64,0.4)',
           }}
           animate={{
             y: [0, -20, 10, 0],
@@ -202,7 +205,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
             <br />
             <span className="relative inline-block">
               <em className="italic font-light not-italic"
-                style={{ color: 'rgb(176,40,55)' }}>
+                style={{ color: 'rgb(138,109,46)' }}>
                 {data.heading2}
               </em>
               {/* Underline shimmer */}
@@ -212,7 +215,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
                 transition={{ delay: 1.4, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                 className="absolute -bottom-2 left-0 right-0 h-px"
                 style={{
-                  background: 'linear-gradient(90deg, rgba(176,40,55,0.7), rgba(181,146,76,0.6), transparent)',
+                  background: 'linear-gradient(90deg, rgba(138,109,46,0.7), rgba(138,109,46,0.6), transparent)',
                 }}
               />
             </span>
@@ -235,12 +238,12 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
           <motion.div variants={RISE} className="flex flex-wrap items-center gap-4 mb-14">
             <Link href={data.cta1Link}
               className="group relative overflow-hidden btn-primary
-                         shadow-[0_8px_32px_rgba(176,40,55,0.32)]
-                         hover:shadow-[0_12px_40px_rgba(176,40,55,0.44)]
+                         shadow-[0_8px_32px_rgba(138,109,46,0.3)]
+                         hover:shadow-[0_12px_40px_rgba(138,109,46,0.42)]
                          transition-shadow duration-300">
-              {/* Fill sweep */}
+              {/* Fill sweep — black button reveals a gold fill on hover */}
               <motion.span
-                className="absolute inset-0 bg-wine-800 origin-left pointer-events-none"
+                className="absolute inset-0 bg-wine-500 origin-left pointer-events-none"
                 initial={{ scaleX: 0 }}
                 whileHover={{ scaleX: 1 }}
                 transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
@@ -272,31 +275,6 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
             ))}
           </motion.div>
 
-          {/* Social proof */}
-          <motion.div variants={RISE}
-            className="flex items-center gap-4 mt-8">
-            <div className="flex -space-x-2.5">
-              {['#B02837','#8B3A44','#D24650','#6B1A22','#C04050'].map((c, i) => (
-                <div key={i}
-                  className="w-8 h-8 rounded-full border-2 border-white
-                             flex items-center justify-center text-white
-                             text-[0.62rem] font-bold shadow-sm"
-                  style={{ background: c }}>
-                  {['A','W','J','S','G'][i]}
-                </div>
-              ))}
-            </div>
-            <div>
-              <div className="flex items-center gap-0.5 mb-0.5">
-                {[1,2,3,4,5].map(i => (
-                  <Star key={i} size={10} className="fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <div className="text-[0.7rem] text-stone/50">
-                <strong className="text-stone font-semibold">2,400+</strong> customers across Kenya
-              </div>
-            </div>
-          </motion.div>
         </motion.div>
 
         {/* ── RIGHT: Bottle stage ───────────────────── */}
@@ -306,7 +284,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
                      h-[480px] lg:h-[680px] w-full"
         >
           {/* Orbit rings */}
-          {data.showOrbitRings && [
+          {showOrbitRings && [
             { size: 280, dur: 75,  op: 0.28, rev: false },
             { size: 400, dur: 110, op: 0.16, rev: true  },
             { size: 520, dur: 150, op: 0.10, rev: false },
@@ -318,13 +296,13 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
               className="absolute rounded-full pointer-events-none"
               style={{
                 width: ring.size, height: ring.size,
-                border: `1px dashed rgba(176,40,55,${ring.op})`,
+                border: `1px dashed rgba(138,109,46,${ring.op})`,
               }}
             />
           ))}
 
           {/* Orbiting dots */}
-          {data.showOrbitRings && (
+          {showOrbitRings && (
             <>
               <motion.div
                 animate={{ rotate: 360 }}
@@ -333,7 +311,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
                 style={{ width: 280, height: 280 }}>
                 <div className="absolute -top-1.5 left-1/2 -translate-x-1/2
                                 w-3 h-3 rounded-full bg-wine-500/70
-                                shadow-[0_0_10px_rgba(176,40,55,0.6)]" />
+                                shadow-[0_0_10px_rgba(138,109,46,0.6)]" />
               </motion.div>
               <motion.div
                 animate={{ rotate: -360 }}
@@ -341,21 +319,21 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
                 className="absolute pointer-events-none"
                 style={{ width: 400, height: 400 }}>
                 <div className="absolute top-0 right-1/4
-                                w-2 h-2 rounded-full bg-amber-400/50
-                                shadow-[0_0_8px_rgba(181,146,76,0.5)]" />
+                                w-2 h-2 rounded-full bg-stone/40
+                                shadow-[0_0_8px_rgba(23,20,15,0.35)]" />
               </motion.div>
             </>
           )}
 
           {/* Glow pool under bottle */}
           <motion.div
-            animate={{ scale: [1, 1.35, 1], opacity: [0.25, 0.55, 0.25] }}
+            animate={reduceMotion ? undefined : { scale: [1, 1.35, 1], opacity: [0.25, 0.55, 0.25] }}
             transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
             className="absolute pointer-events-none"
             style={{
               width: 200, height: 44,
               bottom: '12%', left: '50%', transform: 'translateX(-50%)',
-              background: 'rgba(176,40,55,0.22)',
+              background: 'rgba(23,20,15,0.16)',
               filter: 'blur(22px)',
               borderRadius: '50%',
             }}
@@ -372,13 +350,13 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
             {/* Refraction halo */}
             <div className="absolute -inset-12 rounded-full pointer-events-none"
               style={{
-                background: 'radial-gradient(ellipse at center, rgba(176,40,55,0.06) 0%, transparent 70%)',
+                background: 'radial-gradient(ellipse at center, rgba(138,109,46,0.08) 0%, transparent 70%)',
                 filter: 'blur(24px)',
               }}
             />
 
             {isVideo ? (
-              <div className="relative w-[280px] h-[360px] lg:w-[380px] lg:h-[480px] rounded-2xl overflow-hidden shadow-[0_30px_70px_rgba(176,40,55,0.25)] border border-white/60 bg-black">
+              <div className="relative w-[280px] h-[360px] lg:w-[380px] lg:h-[480px] rounded-2xl overflow-hidden shadow-[0_30px_70px_rgba(23,20,15,0.22)] border border-white/60 bg-black">
                 {isYouTube ? (
                   <iframe
                     src={toEmbedUrl(data.videoUrl)}
@@ -396,9 +374,9 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
               </div>
             ) : data.heroImageUrl ? (
               <motion.div
-                animate={{ y: [-10, 10, -10] }}
+                animate={reduceMotion ? undefined : { y: [-10, 10, -10] }}
                 transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-                className="relative w-[260px] h-[340px] lg:w-[340px] lg:h-[440px] rounded-2xl overflow-hidden shadow-[0_30px_70px_rgba(176,40,55,0.25)] border border-white/60"
+                className="relative w-[260px] h-[340px] lg:w-[340px] lg:h-[440px] rounded-2xl overflow-hidden shadow-[0_30px_70px_rgba(23,20,15,0.22)] border border-white/60"
               >
                 <Image
                   src={data.heroImageUrl}
@@ -411,7 +389,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
               </motion.div>
             ) : (
               <motion.div
-                animate={{ y: [-14, 14, -14], rotate: [-1.2, 1.2, -1.2] }}
+                animate={reduceMotion ? undefined : { y: [-14, 14, -14], rotate: [-1.2, 1.2, -1.2] }}
                 transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
               >
                 <HeroBottle />
@@ -448,26 +426,6 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
           })}
 
           {/* ── Floating badges ── */}
-          {/* Rating */}
-          {data.showRatingBadge && (
-            <motion.div
-              initial={{ opacity: 0, x: 30, y: 10 }}
-              animate={{ opacity: 1, x: 0,  y: 0 }}
-              transition={{ delay: 2.2, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute bottom-[18%] right-0 lg:right-[-1rem] z-20
-                         bg-white/95 backdrop-blur-md border border-stone/10
-                         shadow-[0_8px_32px_rgba(0,0,0,0.1)] px-5 py-3.5"
-            >
-              <div className="flex items-center gap-0.5 mb-1">
-                {[1,2,3,4,5].map(i => (
-                  <Star key={i} size={11} className="fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <div className="text-[0.78rem] font-bold text-stone">4.9 / 5.0</div>
-              <div className="text-[0.62rem] text-stone/40 tracking-wide mt-0.5">2,400+ Reviews</div>
-            </motion.div>
-          )}
-
           {/* Delivery */}
           <motion.div
             initial={{ opacity: 0, x: -30, y: -10 }}
@@ -515,11 +473,11 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
         <span className="text-[0.55rem] tracking-[0.42em] uppercase text-stone/30">Discover</span>
         <div className="relative h-14 w-px overflow-hidden">
           <motion.div
-            animate={{ y: ['-100%', '100%'] }}
+            animate={reduceMotion ? undefined : { y: ['-100%', '100%'] }}
             transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
             className="absolute inset-x-0 top-0 h-full"
             style={{
-              background: 'linear-gradient(to bottom, transparent, rgba(176,40,55,0.7), transparent)',
+              background: 'linear-gradient(to bottom, transparent, rgba(138,109,46,0.7), transparent)',
             }}
           />
         </div>
@@ -528,7 +486,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
   );
 }
 
-/* ─── Hero Bottle SVG — unchanged ────────────────────── */
+/* ─── Hero Bottle SVG — black bottle, gold trim ──────── */
 function HeroBottle() {
   return (
     <svg
@@ -539,9 +497,9 @@ function HeroBottle() {
     >
       <defs>
         <linearGradient id="hb-g" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%"   stopColor="#8B3A44" />
-          <stop offset="50%"  stopColor="#722F37" />
-          <stop offset="100%" stopColor="#4E1F25" />
+          <stop offset="0%"   stopColor="#2A2620" />
+          <stop offset="50%"  stopColor="#17140F" />
+          <stop offset="100%" stopColor="#000000" />
         </linearGradient>
         <linearGradient id="hb-shine" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%"   stopColor="rgba(255,255,255,0.5)" />
@@ -553,21 +511,21 @@ function HeroBottle() {
           <stop offset="100%" stopColor="#111" />
         </linearGradient>
         <linearGradient id="hb-gold" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor="#B5924C" />
-          <stop offset="50%"  stopColor="#D9BB6A" />
-          <stop offset="100%" stopColor="#B5924C" />
+          <stop offset="0%"   stopColor="#8A6D2E" />
+          <stop offset="50%"  stopColor="#AD8640" />
+          <stop offset="100%" stopColor="#8A6D2E" />
         </linearGradient>
         <filter id="hb-glow">
           <feDropShadow dx="0" dy="12" stdDeviation="20"
-            floodColor="#722F37" floodOpacity="0.35" />
+            floodColor="#000000" floodOpacity="0.3" />
         </filter>
       </defs>
 
       {/* Cap */}
       <rect x="58" y="8"  width="44" height="40" rx="4" fill="url(#hb-cap)" />
       <rect x="62" y="11" width="12" height="34" rx="3" fill="rgba(255,255,255,0.06)" />
-      <circle cx="80" cy="28" r="4.5" fill="rgba(114,47,55,0.6)" />
-      <circle cx="80" cy="28" r="2.5" fill="rgba(114,47,55,0.9)" />
+      <circle cx="80" cy="28" r="4.5" fill="rgba(138,109,46,0.5)" />
+      <circle cx="80" cy="28" r="2.5" fill="rgba(138,109,46,0.85)" />
 
       {/* Gold collar */}
       <rect x="54" y="46" width="52" height="6" rx="1" fill="url(#hb-gold)" />
@@ -601,20 +559,20 @@ function HeroBottle() {
       {/* Label */}
       <rect x="46" y="142" width="68" height="70" fill="rgba(255,255,255,0.97)" />
       <rect x="49" y="145" width="62" height="64"
-        fill="none" stroke="rgba(114,47,55,0.15)" strokeWidth="0.5" />
+        fill="none" stroke="rgba(23,20,15,0.15)" strokeWidth="0.5" />
       <rect x="52" y="148" width="56" height="58"
-        fill="none" stroke="rgba(181,146,76,0.25)" strokeWidth="0.5" />
+        fill="none" stroke="rgba(138,109,46,0.3)" strokeWidth="0.5" />
 
       <text x="80" y="168" textAnchor="middle"
         fontFamily="Georgia,serif" fontStyle="italic"
-        fontSize="13" fill="#1a1a1a" letterSpacing="0.5">
+        fontSize="13" fill="#17140F" letterSpacing="0.5">
         Floresco
       </text>
       <line x1="54" y1="174" x2="106" y2="174"
-        stroke="rgba(114,47,55,0.18)" strokeWidth="0.5" />
+        stroke="rgba(23,20,15,0.18)" strokeWidth="0.5" />
       <text x="80" y="184" textAnchor="middle"
         fontFamily="Arial,sans-serif" fontSize="5.5"
-        fill="#722F37" letterSpacing="2">
+        fill="#6B5423" letterSpacing="2">
         PARFUM
       </text>
       <text x="80" y="194" textAnchor="middle"
@@ -623,7 +581,7 @@ function HeroBottle() {
         ELDORET · KENYA
       </text>
       <line x1="54" y1="200" x2="106" y2="200"
-        stroke="rgba(114,47,55,0.10)" strokeWidth="0.5" />
+        stroke="rgba(23,20,15,0.1)" strokeWidth="0.5" />
       <text x="80" y="208" textAnchor="middle"
         fontFamily="Arial,sans-serif" fontSize="4"
         fill="#999" letterSpacing="0.8">

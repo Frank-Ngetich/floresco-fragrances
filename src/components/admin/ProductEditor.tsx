@@ -1,11 +1,12 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Save, RefreshCw, Check, Plus, Trash2, ArrowLeft, Upload, Eye, Image, AlertTriangle } from 'lucide-react';
 import { BottleSVG } from '@/components/ui/BottleSVG';
 import { formatKES, slugify, cn } from '@/lib/utils';
 import { PRODUCTS_DATA } from '@/lib/products-data';
+import { uploadToMedia, MediaUnconfiguredError } from '@/lib/media-upload';
 
 type Status = 'draft' | 'active' | 'archived';
 
@@ -56,6 +57,10 @@ export function ProductEditor({ productId }: { productId?: string }) {
   const [error,   setError]   = useState('');
   const [tab,     setTab]     = useState<Tab>('basic');
   const [noteInputs, setNoteInputs] = useState({ top:'', heart:'', base:'' });
+  const [uploading, setUploading] = useState(false);
+  const [uploadPct, setUploadPct] = useState(0);
+  const [uploadErr, setUploadErr] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const isNew = !productId || productId === 'new';
 
@@ -92,6 +97,31 @@ export function ProductEditor({ productId }: { productId?: string }) {
   }
   function removeNote(type: keyof Notes, i: number) {
     up('scentNotes', { ...form.scentNotes, [type]: form.scentNotes[type].filter((_,j)=>j!==i) });
+  }
+
+  async function uploadImages(fileList: FileList | null) {
+    if (!fileList?.length) return;
+    setUploadErr('');
+    setUploading(true);
+    for (const file of Array.from(fileList)) {
+      setUploadPct(0);
+      try {
+        const uploaded = await uploadToMedia(file, 'products', setUploadPct);
+        setForm(p => ({
+          ...p,
+          images: [...p.images, { url: uploaded.url, alt: p.name || uploaded.name, isPrimary: p.images.length === 0 }],
+        }));
+        setSaved(false);
+      } catch (err: any) {
+        if (err instanceof MediaUnconfiguredError) {
+          setUploadErr('R2 storage is not configured yet — ask your developer to set it up, or add an image by URL below.');
+        } else {
+          setUploadErr(err.message || 'Upload failed.');
+        }
+      }
+    }
+    setUploading(false);
+    setUploadPct(0);
   }
 
   function addSize() { up('sizes', [...form.sizes, { size:'30ml', price:0, stock:0, sku:'' }]); }
@@ -162,7 +192,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
             </a>
           )}
           <button onClick={save} disabled={saving}
-            className="flex items-center gap-2 bg-wine-600 hover:bg-wine-700 disabled:opacity-60 text-white text-xs tracking-[0.14em] uppercase font-medium px-5 py-2 rounded transition-colors">
+            className="flex items-center gap-2 bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-xs tracking-[0.14em] uppercase font-medium px-5 py-2 rounded transition-colors">
             {saving ? <RefreshCw size={13} className="animate-spin" /> : saved ? <Check size={13} /> : <Save size={13} />}
             {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Product'}
           </button>
@@ -190,7 +220,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`flex-shrink-0 px-4 py-2 rounded text-xs tracking-[0.14em] uppercase font-medium transition-all ${
-              tab===t.id ? 'bg-wine-600 text-white' : 'text-white/50 hover:text-white'
+              tab===t.id ? 'bg-gold-600 text-white' : 'text-white/50 hover:text-white'
             }`}>
             {t.label}
           </button>
@@ -257,7 +287,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
               </div>
               <label className="flex items-center gap-3 cursor-pointer py-2">
                 <input type="checkbox" checked={form.featured} onChange={e => up('featured', e.target.checked)}
-                  className="w-4 h-4 accent-wine-600" />
+                  className="w-4 h-4 accent-gold-600" />
                 <div>
                   <div className="text-sm text-white">Feature on homepage</div>
                   <div className="text-xs text-white/40">Shows in the "House Favourites" section</div>
@@ -274,9 +304,9 @@ export function ProductEditor({ productId }: { productId?: string }) {
                   <F label={`${type.charAt(0).toUpperCase()+type.slice(1)} Notes`}>
                     <div className="flex flex-wrap gap-2 mb-3">
                       {form.scentNotes[type].map((note, i) => (
-                        <span key={i} className="flex items-center gap-1.5 bg-wine-600/20 border border-wine-600/30 text-wine-300 text-xs px-3 py-1.5 rounded-full">
+                        <span key={i} className="flex items-center gap-1.5 bg-gold-600/20 border border-gold-600/30 text-gold-300 text-xs px-3 py-1.5 rounded-full">
                           {note}
-                          <button onClick={() => removeNote(type, i)} className="text-wine-400/60 hover:text-red-400 transition-colors">×</button>
+                          <button onClick={() => removeNote(type, i)} className="text-gold-400/60 hover:text-red-400 transition-colors">×</button>
                         </span>
                       ))}
                     </div>
@@ -289,7 +319,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
                         className="admin-input flex-1 text-sm py-2"
                       />
                       <button onClick={() => addNote(type)}
-                        className="bg-wine-600 hover:bg-wine-700 text-white px-3 py-2 rounded text-xs transition-colors">
+                        className="bg-gold-600 hover:bg-gold-700 text-white px-3 py-2 rounded text-xs transition-colors">
                         <Plus size={13} />
                       </button>
                     </div>
@@ -304,7 +334,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
             <div className="space-y-4 bg-white/[0.03] border border-white/10 rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-medium text-white">Sizes & Pricing</h3>
-                <button onClick={addSize} className="flex items-center gap-1.5 text-xs text-wine-400 hover:text-wine-300 transition-colors">
+                <button onClick={addSize} className="flex items-center gap-1.5 text-xs text-gold-400 hover:text-gold-300 transition-colors">
                   <Plus size={13} /> Add Size
                 </button>
               </div>
@@ -345,42 +375,82 @@ export function ProductEditor({ productId }: { productId?: string }) {
           {/* MEDIA */}
           {tab === 'media' && (
             <div className="space-y-5 bg-white/[0.03] border border-white/10 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-white">Product Images</h3>
-                <button onClick={() => up('images', [...form.images, { url:'', alt:'', isPrimary: form.images.length===0 }])}
-                  className="text-xs text-wine-400 hover:text-wine-300 flex items-center gap-1 transition-colors">
-                  <Plus size={13} /> Add Image URL
-                </button>
+              <h3 className="text-sm font-medium text-white mb-2">Product Images</h3>
+
+              <div
+                onClick={() => !uploading && fileRef.current?.click()}
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => { e.preventDefault(); if (!uploading) uploadImages(e.dataTransfer.files); }}
+                className={cn('border-2 border-dashed rounded-lg p-8 text-center transition-colors',
+                  uploading ? 'border-gold-600/40' : 'border-white/15 hover:border-gold-600/40 cursor-pointer')}>
+                {uploading ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-full max-w-xs bg-white/10 rounded-full h-2 overflow-hidden">
+                      <div className="h-full bg-gold-500 transition-all duration-300 rounded-full" style={{ width: `${uploadPct}%` }} />
+                    </div>
+                    <p className="text-sm text-white/60">Uploading… {uploadPct}%</p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload size={26} className="mx-auto text-white/25 mb-3" />
+                    <p className="text-sm text-white/50 mb-1">Drag & drop photos here, or <span className="text-gold-400">click to browse</span></p>
+                    <p className="text-xs text-white/30">Uploads straight to your Media Library — no copy-pasting URLs</p>
+                  </>
+                )}
+                <input ref={fileRef} type="file" multiple accept="image/*" className="hidden"
+                  onChange={e => uploadImages(e.target.files)} />
               </div>
-              {form.images.length === 0 && (
-                <div className="border-2 border-dashed border-white/10 rounded-lg p-10 text-center">
-                  <Image size={28} className="mx-auto text-white/20 mb-3" strokeWidth={1} />
-                  <p className="text-sm text-white/40 mb-1">No images added yet</p>
-                  <p className="text-xs text-white/25">Upload via <a href="/admin/media" className="text-wine-400">Media Library</a> then paste URL here</p>
+
+              {uploadErr && (
+                <div className="flex items-start gap-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-sm px-4 py-3 rounded-lg">
+                  <AlertTriangle size={15} className="flex-shrink-0 mt-0.5" /> {uploadErr}
                 </div>
               )}
-              {form.images.map((img, i) => (
-                <div key={i} className="grid grid-cols-[1fr_auto_auto] gap-3 items-center">
-                  <F label={i===0?'Image URL':''}>
-                    <input value={img.url} onChange={e => {
-                      const imgs=[...form.images]; imgs[i]={...imgs[i],url:e.target.value}; up('images',imgs);
-                    }} className="admin-input text-sm" placeholder="https://res.cloudinary.com/…" />
-                  </F>
-                  <div className={cn('flex-shrink-0 w-8 h-8 rounded border flex items-center justify-center cursor-pointer transition-colors',
-                    img.isPrimary ? 'border-wine-500 bg-wine-500/20 text-wine-400' : 'border-white/15 text-white/20 hover:border-wine-400')}
-                    onClick={() => up('images', form.images.map((im,j)=>({...im,isPrimary:j===i})))}>
-                    <Check size={12} />
-                  </div>
-                  <button onClick={() => up('images', form.images.filter((_,j)=>j!==i))}
-                    className="flex-shrink-0 text-white/20 hover:text-red-400 transition-colors">
-                    <Trash2 size={14} />
-                  </button>
+
+              {form.images.length === 0 ? (
+                <p className="text-xs text-white/30 text-center">No images yet — the first photo you add becomes the primary image.</p>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                  {form.images.map((img, i) => (
+                    <div key={i} className={cn('relative group border rounded-lg overflow-hidden aspect-square bg-white/[0.04]',
+                      img.isPrimary ? 'border-gold-500 ring-1 ring-gold-500/40' : 'border-white/10')}>
+                      {img.url ? (
+                        <img src={img.url} alt={img.alt} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center"><Image size={20} className="text-white/20" /></div>
+                      )}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <button onClick={() => up('images', form.images.map((im,j)=>({...im,isPrimary:j===i})))}
+                          title="Set as primary"
+                          className={cn('p-1.5 rounded transition-colors', img.isPrimary ? 'bg-gold-600 text-white' : 'bg-white/20 hover:bg-gold-600 text-white')}>
+                          <Check size={13} />
+                        </button>
+                        <button onClick={() => up('images', form.images.filter((_,j)=>j!==i))}
+                          title="Remove" className="p-1.5 bg-white/20 hover:bg-red-600 rounded transition-colors text-white">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                      {img.isPrimary && (
+                        <span className="absolute top-1.5 left-1.5 bg-gold-600 text-white text-[0.55rem] tracking-wide uppercase px-1.5 py-0.5 rounded">Primary</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-              <div className="border-2 border-dashed border-white/10 rounded-lg p-8 text-center hover:border-wine-600/30 transition-colors cursor-pointer">
-                <Upload size={22} className="mx-auto text-white/20 mb-2" />
-                <p className="text-xs text-white/30">Upload directly via <a href="/admin/media" className="text-wine-400 hover:text-wine-300">Media Library →</a></p>
-              </div>
+              )}
+
+              <details className="text-xs text-white/35">
+                <summary className="cursor-pointer hover:text-white/50 transition-colors">Add an image by URL instead</summary>
+                <div className="flex gap-2 mt-3">
+                  <input id="image-url-input" className="admin-input text-sm flex-1" placeholder="https://…" />
+                  <button onClick={() => {
+                    const el = document.getElementById('image-url-input') as HTMLInputElement | null;
+                    if (el?.value.trim()) {
+                      up('images', [...form.images, { url: el.value.trim(), alt: form.name, isPrimary: form.images.length === 0 }]);
+                      el.value = '';
+                    }
+                  }} className="bg-gold-600 hover:bg-gold-700 text-white px-4 py-2 rounded text-xs transition-colors flex-shrink-0">Add</button>
+                </div>
+              </details>
             </div>
           )}
 
@@ -434,7 +504,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-white/60">Featured</span>
-              <span className={form.featured?'text-wine-400':'text-white/30'}>{form.featured?'Yes':'No'}</span>
+              <span className={form.featured?'text-gold-400':'text-white/30'}>{form.featured?'Yes':'No'}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-white/60">Sizes</span>
@@ -445,7 +515,7 @@ export function ProductEditor({ productId }: { productId?: string }) {
               <span className="text-white/70">{form.sizes.reduce((s,sz)=>s+(sz.stock||0),0)}</span>
             </div>
             <button onClick={save} disabled={saving}
-              className="w-full mt-3 bg-wine-600 hover:bg-wine-700 disabled:opacity-60 text-white text-xs tracking-[0.14em] uppercase py-2.5 rounded transition-colors flex items-center justify-center gap-2">
+              className="w-full mt-3 bg-gold-600 hover:bg-gold-700 disabled:opacity-60 text-white text-xs tracking-[0.14em] uppercase py-2.5 rounded transition-colors flex items-center justify-center gap-2">
               {saving ? <RefreshCw size={12} className="animate-spin" /> : <Save size={12} />}
               {saving ? 'Saving…' : 'Save Product'}
             </button>

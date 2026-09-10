@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Heart, Share2, ChevronDown, Star, Shield, Truck, RefreshCw } from 'lucide-react';
 import { ProductImage } from '@/components/ui/ProductImage';
 import { ProductCard } from './ProductCard';
@@ -23,6 +23,14 @@ export function ProductDetailClient({ product, related }: Props) {
   });
   const addItem = useCart((s) => s.addItem);
   const setOpen = useCart((s) => s.setOpen);
+
+  /* Auto-advance the gallery; manual thumbnail clicks just continue from there */
+  useEffect(() => {
+    const count = product.images?.length || 0;
+    if (count < 2) return;
+    const id = setInterval(() => setActiveImage((i) => (i + 1) % count), 4000);
+    return () => clearInterval(id);
+  }, [product.images?.length]);
 
   async function handleAddToCart() {
     setAdding(true);
@@ -71,16 +79,25 @@ export function ProductDetailClient({ product, related }: Props) {
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               className="relative bg-cream-100 aspect-[4/5] flex items-center justify-center mb-4 overflow-hidden group"
             >
-              <ProductImage
-                src={product.images?.[activeImage]?.url}
-                alt={product.images?.[activeImage]?.alt || product.name}
-                color1={product.color1}
-                color2={product.color2}
-                brandName={product.brand}
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
-              />
+              <AnimatePresence initial={false}>
+                <motion.div
+                  key={product.images?.[activeImage]?.url || 'placeholder'}
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.6, ease: 'easeInOut' }}
+                  className="absolute inset-0"
+                >
+                  <ProductImage
+                    src={product.images?.[activeImage]?.url}
+                    alt={product.images?.[activeImage]?.alt || product.name}
+                    color1={product.color1}
+                    color2={product.color2}
+                    brandName={product.brand}
+                    fill
+                    priority
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                  />
+                </motion.div>
+              </AnimatePresence>
 
               {product.badge && (
                 <span className="absolute top-6 left-6 bg-stone text-cream-100 text-[0.6rem] tracking-[0.18em] uppercase px-3 py-1.5">
@@ -121,20 +138,22 @@ export function ProductDetailClient({ product, related }: Props) {
             <div className="eyebrow mb-3">{product.brand}</div>
             <h1 className="font-display text-[clamp(2rem,3.5vw,3rem)] mb-3">{product.name}</h1>
 
-            {/* Rating */}
-            <div className="flex items-center gap-3 mb-6 pb-6 border-b border-[rgb(var(--border))]">
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    size={13}
-                    className={i < Math.floor(product.rating) ? 'fill-burgundy-600 text-burgundy-600' : 'text-cream-400'}
-                    strokeWidth={1}
-                  />
-                ))}
+            {/* Rating — only shown once real reviews exist */}
+            {product.reviewCount > 0 && (
+              <div className="flex items-center gap-3 mb-6 pb-6 border-b border-[rgb(var(--border))]">
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      size={13}
+                      className={i < Math.floor(product.rating) ? 'fill-burgundy-600 text-burgundy-600' : 'text-cream-400'}
+                      strokeWidth={1}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm text-stone/55">{product.rating} · {product.reviewCount} reviews</span>
               </div>
-              <span className="text-sm text-stone/55">{product.rating} · {product.reviewCount} reviews</span>
-            </div>
+            )}
 
             <p className="font-serif text-xl italic text-stone/65 mb-6 leading-relaxed">{product.tagline}</p>
 

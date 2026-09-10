@@ -4,8 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { Check, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
 import { useCart } from '@/lib/cart-store';
-import { BottleSVG } from '@/components/ui/BottleSVG';
+import { ProductImage } from '@/components/ui/ProductImage';
 import { formatKES } from '@/lib/utils';
+import { calcDiscount } from '@/lib/coupons';
 
 const T = { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const };
 
@@ -35,11 +36,11 @@ interface CheckoutForm {
 }
 
 export function CheckoutClient() {
-  const { items, total, clearCart } = useCart();
+  const { items, total, clearCart, discountCode } = useCart();
   const [mounted,  setMounted]  = useState(false);
   const [step,     setStep]     = useState<Step>('details');
   const [delivery, setDelivery] = useState<'pickup' | 'courier'>('courier');
-  const [payment,  setPayment]  = useState<'mpesa' | 'card' | 'cod' | 'bank'>('mpesa');
+  const [payment,  setPayment]  = useState<'mpesa' | 'cod'>('mpesa');
   const [county,   setCounty]   = useState('Uasin Gishu');
   const [error,    setError]    = useState('');
   const [orderRef, setOrderRef] = useState('');       // from server
@@ -59,7 +60,8 @@ export function CheckoutClient() {
 
   const subtotal   = total();
   const shipping   = calcShipping(county, delivery);
-  const orderTotal = subtotal + shipping;
+  const discount   = calcDiscount(discountCode, subtotal);
+  const orderTotal = subtotal + shipping - discount;
 
   /* ── Validation ─────────────────────────────────── */
   function validateDetails(): string {
@@ -78,6 +80,8 @@ export function CheckoutClient() {
     }
     return '';
   }
+
+  const orderSummaryProps = { items, subtotal, shipping, discount, total: orderTotal };
 
   /* ── Place order ────────────────────────────────── */
   async function placeOrder() {
@@ -116,6 +120,7 @@ export function CheckoutClient() {
         amount: orderTotal,
         status: 'pending',
       },
+      discount: discountCode ? { code: discountCode } : undefined,
       subtotal,
       total: orderTotal,
     };
@@ -152,8 +157,8 @@ export function CheckoutClient() {
         if (mpesaRes.ok) {
           setMpesaMsg(`M-Pesa prompt sent to ${form.phone}. Enter your PIN to complete payment.`);
         } else {
-          /* STK push failed — order still exists, user can pay manually */
-          setMpesaMsg(`Order placed. M-Pesa prompt failed — please call us on +254 7XX XXX XXX to complete payment for order ${orderNumber}.`);
+          /* STK push failed — order still exists, customer can retry from the order tracking page */
+          setMpesaMsg(`Order placed, but the M-Pesa prompt failed to send. Track order ${orderNumber} to retry payment, or reach us via the Contact page.`);
         }
       }
 
@@ -299,7 +304,7 @@ export function CheckoutClient() {
                     Continue to Payment
                   </button>
                 </div>
-                <OrderSummary items={items} subtotal={subtotal} shipping={shipping} total={orderTotal} />
+                <OrderSummary {...orderSummaryProps} />
               </div>
             </motion.div>
           )}
@@ -321,9 +326,7 @@ export function CheckoutClient() {
                   <div className="space-y-3 mb-8">
                     {([
                       ['mpesa', 'M-Pesa STK Push',   'A prompt is sent to your phone. Enter your PIN.', 'Recommended'],
-                      ['card',  'Card Payment',       'Visa or Mastercard — secured by Flutterwave.',    ''],
                       ['cod',   'Cash on Delivery',   'Pay on arrival. Eldoret only.',                   'Eldoret only'],
-                      ['bank',  'Bank Transfer',      'Equity Bank. Ref code provided after ordering.',  ''],
                     ] as const).map(([id, label, desc, badge]) => (
                       <label key={id} className={`flex items-start sm:items-center gap-4 p-4 border cursor-pointer transition-all
                         ${payment === id ? 'border-wine-500 bg-wine-50' : 'border-stone/15 hover:border-stone/30'}`}>
@@ -339,35 +342,14 @@ export function CheckoutClient() {
                       </label>
                     ))}
                   </div>
-
-                  {payment === 'card' && (
-                    <div className="space-y-4 mb-8 p-5 bg-stone/[0.02] border border-stone/10">
-                      <CField label="Card Number">
-                        <input className="input-luxury font-mono" placeholder="1234 5678 9012 3456" maxLength={19} />
-                      </CField>
-                      <div className="grid grid-cols-2 gap-4">
-                        <CField label="Expiry"><input className="input-luxury" placeholder="MM / YY" /></CField>
-                        <CField label="CVV"><input className="input-luxury" placeholder="•••" type="password" maxLength={4} /></CField>
-                      </div>
-                      <p className="text-xs text-stone/40">Card processing via Flutterwave — configure your API keys in .env.local</p>
-                    </div>
-                  )}
-
-                  {payment === 'bank' && (
-                    <div className="p-5 bg-stone/[0.02] border border-stone/10 mb-8 space-y-2 text-sm text-stone/60">
-                      <div><strong className="text-stone">Bank:</strong> Equity Bank</div>
-                      <div><strong className="text-stone">Account:</strong> 0123456789</div>
-                      <div><strong className="text-stone">Branch:</strong> Eldoret</div>
-                      <p className="text-xs text-stone/40 mt-3">Your order reference will be shown after placing the order. Use it as the transfer reference.</p>
-                    </div>
-                  )}
+                  <p className="text-xs text-stone/35 mb-8">Card and bank transfer are coming soon.</p>
 
                   <button onClick={placeOrder} className="btn-primary w-full justify-center shadow-[0_8px_24px_rgba(176,40,55,0.3)]">
                     Complete Order · {formatKES(orderTotal)}
                   </button>
                   <p className="text-center text-[0.68rem] text-stone/35 mt-4">🔒 Encrypted and secure</p>
                 </div>
-                <OrderSummary items={items} subtotal={subtotal} shipping={shipping} total={orderTotal} />
+                <OrderSummary {...orderSummaryProps} />
               </div>
             </motion.div>
           )}
@@ -399,13 +381,6 @@ export function CheckoutClient() {
                 </div>
               )}
 
-              {payment === 'bank' && (
-                <div className="bg-stone/[0.04] border border-stone/10 text-sm px-5 py-4 mb-6 text-left leading-relaxed text-stone/60">
-                  Transfer <strong className="text-stone">{formatKES(orderTotal)}</strong> to Equity Bank account 0123456789.
-                  Use order reference <strong className="text-stone font-mono">{orderRef}</strong> as the transfer description.
-                </div>
-              )}
-
               <div className="bg-stone/[0.03] border border-stone/10 px-8 py-5 inline-block mb-6">
                 <div className="text-[0.6rem] tracking-[0.2em] uppercase text-stone/35 mb-1">Order Reference</div>
                 <div className="font-display text-2xl font-mono">{orderRef}</div>
@@ -427,8 +402,8 @@ export function CheckoutClient() {
 }
 
 /* ─── Sub-components ──────────────────────────────── */
-function OrderSummary({ items, subtotal, shipping, total }: {
-  items: any[]; subtotal: number; shipping: number; total: number;
+function OrderSummary({ items, subtotal, shipping, discount, total }: {
+  items: any[]; subtotal: number; shipping: number; discount: number; total: number;
 }) {
   return (
     <div className="bg-stone/[0.025] border border-stone/10 p-7 sticky top-28 self-start">
@@ -436,9 +411,8 @@ function OrderSummary({ items, subtotal, shipping, total }: {
       <div className="space-y-4 mb-6 pb-6 border-b border-stone/10">
         {items.map(item => (
           <div key={`${item.productId}-${item.size}`} className="flex items-center gap-3">
-            <div className="w-11 h-14 bg-white flex items-center justify-center flex-shrink-0">
-              <BottleSVG color1={item.color1} color2={item.color2}
-                id={`co-${item.productId}`} className="h-10 w-auto" showLabel={false} />
+            <div className="relative w-11 h-14 bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <ProductImage src={item.image || null} alt={item.name} color1={item.color1} color2={item.color2} fill className="object-cover" sizes="44px" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium truncate">{item.name}</div>
@@ -450,6 +424,7 @@ function OrderSummary({ items, subtotal, shipping, total }: {
       </div>
       <div className="space-y-2 text-sm mb-5">
         <div className="flex justify-between"><span className="text-stone/50">Subtotal</span><span>{formatKES(subtotal)}</span></div>
+        {discount > 0 && <div className="flex justify-between text-green-700"><span>Discount</span><span>−{formatKES(discount)}</span></div>}
         <div className="flex justify-between"><span className="text-stone/50">Delivery</span><span>{shipping === 0 ? 'Free' : formatKES(shipping)}</span></div>
       </div>
       <div className="flex justify-between font-display text-lg pt-4 border-t border-stone/10">

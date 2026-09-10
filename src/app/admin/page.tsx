@@ -94,7 +94,7 @@ export default function AdminDashboard() {
             Refresh
           </button>
           <Link href="/admin/products/new"
-            className="flex items-center gap-2 bg-wine-600 hover:bg-wine-700 text-white text-xs tracking-[0.16em] uppercase font-medium px-4 py-2.5 rounded transition-colors">
+            className="flex items-center gap-2 bg-gold-600 hover:bg-gold-700 text-white text-xs tracking-[0.16em] uppercase font-medium px-4 py-2.5 rounded transition-colors">
             + New Product
           </Link>
           <Link href="/" target="_blank"
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
       ) : (
         <div className="bg-white/[0.03] border border-white/10 rounded-lg p-8 text-center">
           <p className="text-white/40 text-sm">Could not load stats. Check your MongoDB connection.</p>
-          <button onClick={loadData} className="mt-4 text-wine-400 text-xs hover:text-wine-300 transition-colors">Retry</button>
+          <button onClick={loadData} className="mt-4 text-gold-400 text-xs hover:text-gold-300 transition-colors">Retry</button>
         </div>
       )}
 
@@ -139,7 +139,7 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
           <h3 className="font-medium text-white">Recent Orders</h3>
           <Link href="/admin/orders"
-            className="text-xs text-wine-300 hover:text-wine-200 tracking-wide uppercase transition-colors flex items-center gap-1">
+            className="text-xs text-gold-300 hover:text-gold-200 tracking-wide uppercase transition-colors flex items-center gap-1">
             View all <ArrowUpRight size={12} />
           </Link>
         </div>
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-5 py-3.5">
                       <Link href="/admin/orders"
-                        className="text-xs text-wine-300 opacity-0 group-hover:opacity-100 transition-opacity hover:text-wine-200">
+                        className="text-xs text-gold-300 opacity-0 group-hover:opacity-100 transition-opacity hover:text-gold-200">
                         Manage →
                       </Link>
                     </td>
@@ -191,14 +191,12 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick links */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { href: '/admin/hero',        label: 'Edit Hero',    emoji: '🎨' },
           { href: '/admin/products/new',label: 'Add Product',  emoji: '➕' },
           { href: '/admin/orders',      label: 'All Orders',   emoji: '📦' },
-          { href: '/admin/customers',   label: 'Customers',    emoji: '👥' },
-          { href: '/admin/settings',    label: 'Settings',     emoji: '⚙️' },
           { href: '/admin/media',       label: 'Media',        emoji: '🖼️' },
+          { href: '/admin/settings',    label: 'Settings',     emoji: '⚙️' },
         ].map(link => (
           <Link key={link.href} href={link.href}
             className="bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-lg p-4 text-center transition-all group">

@@ -193,7 +193,7 @@ export function ShopClient({ initialCat = '', initialQ = '' }: { initialCat?: st
       {/* Grid */}
       <div className="max-w-[1400px] mx-auto px-5 lg:px-12 py-10">
         {loading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-8">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="aspect-[4/5] bg-stone/[0.04] animate-pulse" />
             ))}
@@ -210,7 +210,7 @@ export function ShopClient({ initialCat = '', initialQ = '' }: { initialCat?: st
             <motion.div key={`${cat}-${sort}-${query}`}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="grid grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+              className="grid grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-8">
               {gridItems.map((item, i) =>
                 item.type === 'product' ? (
                   <ProductCard key={item.p._id} product={item.p} index={i} inView onQuickView={setQuickView} />

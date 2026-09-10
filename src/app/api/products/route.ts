@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Product } from '@/models';
 import { PRODUCTS_DATA } from '@/lib/products-data';
+import { auth } from '@/lib/auth';
+import { canAccessSection } from '@/lib/permissions';
+import type { UserRole } from '@/types';
 
 export const runtime = 'nodejs';
 
@@ -58,6 +61,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
+    const role = (session?.user as { role?: UserRole })?.role;
+    if (!canAccessSection(role, 'products')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     await connectDB();
     const body = await req.json();
     if (!body.name || !body.slug) {

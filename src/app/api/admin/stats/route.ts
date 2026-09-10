@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Order, Product, User } from '@/models';
+import { auth } from '@/lib/auth';
+import { canAccessSection } from '@/lib/permissions';
+import type { UserRole } from '@/types';
 
 export const runtime = 'nodejs';
 
 export async function GET(_req: NextRequest) {
   try {
+    const session = await auth();
+    const role = (session?.user as { role?: UserRole })?.role;
+    if (!canAccessSection(role, 'dashboard')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     await connectDB();
 
     const now        = new Date();

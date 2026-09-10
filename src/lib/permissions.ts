@@ -1,20 +1,15 @@
 import type { UserRole } from '@/types';
 
 export type AdminSection =
-  | 'dashboard' | 'orders' | 'products' | 'customers' | 'inquiries'
-  | 'media' | 'hero' | 'blog' | 'analytics' | 'settings';
+  | 'dashboard' | 'orders' | 'products' | 'inquiries' | 'media' | 'settings';
 
 /** Which roles can access each admin section at all (page-level gate). */
 const SECTION_ACCESS: Record<AdminSection, UserRole[]> = {
   dashboard: ['staff', 'manager', 'owner'],
   orders:    ['staff', 'manager', 'owner'],
   products:  ['staff', 'manager', 'owner'],
-  customers: ['staff', 'manager', 'owner'],
   inquiries: ['staff', 'manager', 'owner'],
   media:     ['manager', 'owner'],
-  hero:      ['manager', 'owner'],
-  blog:      ['manager', 'owner'],
-  analytics: ['manager', 'owner'],
   settings:  ['owner'],
 };
 
@@ -22,12 +17,8 @@ const SECTION_ACCESS: Record<AdminSection, UserRole[]> = {
 const ROUTE_SECTIONS: [string, AdminSection][] = [
   ['/admin/orders',    'orders'],
   ['/admin/products',  'products'],
-  ['/admin/customers', 'customers'],
   ['/admin/inquiries', 'inquiries'],
   ['/admin/media',     'media'],
-  ['/admin/hero',      'hero'],
-  ['/admin/blog',      'blog'],
-  ['/admin/analytics', 'analytics'],
   ['/admin/settings',  'settings'],
   ['/admin',           'dashboard'],
 ];
@@ -48,6 +39,5 @@ export function canAccessSection(role: UserRole | undefined | null, section: Adm
 export function canDeleteProduct(role?: UserRole | null)  { return role === 'manager' || role === 'owner'; }
 export function canWriteMedia(role?: UserRole | null)     { return role === 'manager' || role === 'owner'; }
 export function canWriteSettings(role?: UserRole | null)  { return role === 'owner'; }
-export function canWriteHero(role?: UserRole | null)      { return role === 'manager' || role === 'owner'; }
-export function canEditCustomer(role?: UserRole | null)   { return role === 'manager' || role === 'owner'; }
+export function canReplyInquiry(role?: UserRole | null)   { return role === 'staff' || role === 'manager' || role === 'owner'; }
 export function canManageTeam(role?: UserRole | null)      { return role === 'owner'; }

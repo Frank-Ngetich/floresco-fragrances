@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { SiteSettings } from '@/models';
 import { auth } from '@/lib/auth';
-import { canWriteSettings, canWriteHero } from '@/lib/permissions';
+import { canAccessSection, canWriteSettings } from '@/lib/permissions';
 import type { UserRole } from '@/types';
 export const runtime = 'nodejs';
 export async function GET(req: NextRequest) {
   try {
+    const session = await auth();
+    const role = (session?.user as { role?: UserRole })?.role;
+    if (!canAccessSection(role, 'settings')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     await connectDB();
     const key = req.nextUrl.searchParams.get('key');
     if (!key) { const all = await SiteSettings.find({}).lean(); return NextResponse.json(all); }
@@ -21,8 +27,7 @@ export async function POST(req: NextRequest) {
 
     const session = await auth();
     const role = (session?.user as { role?: UserRole })?.role;
-    const allowed = key === 'settings' ? canWriteSettings(role) : key === 'hero' ? canWriteHero(role) : role != null;
-    if (!allowed) {
+    if (!canWriteSettings(role)) {
       return NextResponse.json({ error: 'Forbidden — your role cannot change this.' }, { status: 403 });
     }
 

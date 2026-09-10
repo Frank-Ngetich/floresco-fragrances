@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Order, User } from '@/models';
+import { auth } from '@/lib/auth';
+import { canAccessSection } from '@/lib/permissions';
+import { calcDiscount } from '@/lib/coupons';
+import type { UserRole } from '@/types';
 
 export const runtime = 'nodejs';
 
@@ -16,11 +20,16 @@ export async function POST(req: NextRequest) {
     await connectDB();
     const body = await req.json();
 
-    const { customer, items, delivery, payment, subtotal, total } = body;
+    const { customer, items, delivery, payment, discount, subtotal } = body;
 
     if (!customer?.email || !customer?.phone || !items?.length) {
       return NextResponse.json({ error: 'Missing required fields: customer.email, customer.phone, items' }, { status: 400 });
     }
+
+    /* Never trust a client-supplied discount amount — recompute it
+       server-side from the known coupon list against the real subtotal. */
+    const discountAmount = calcDiscount(discount?.code, Number(subtotal) || 0);
+    const recomputedTotal = (Number(subtotal) || 0) + Number(delivery?.fee ?? 0) - discountAmount;
 
     /* Ensure customer record exists (upsert by email) */
     await User.findOneAndUpdate(
@@ -62,10 +71,11 @@ export async function POST(req: NextRequest) {
       payment: {
         method: payment?.method || 'mpesa',
         status: 'pending',
-        amount: Number(payment?.amount ?? total),
+        amount: recomputedTotal,
       },
+      discount: discountAmount > 0 ? { code: discount.code.trim().toUpperCase(), amount: discountAmount } : undefined,
       subtotal: Number(subtotal),
-      total:    Number(total),
+      total:    recomputedTotal,
       status:   'pending',
       statusHistory: [{ status: 'pending', updatedAt: new Date() }],
     });
@@ -79,6 +89,12 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await auth();
+    const role = (session?.user as { role?: UserRole })?.role;
+    if (!canAccessSection(role, 'orders')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     await connectDB();
     const { searchParams } = req.nextUrl;
     const page   = Math.max(1, Number(searchParams.get('page')  || 1));

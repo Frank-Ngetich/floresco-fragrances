@@ -1,7 +1,7 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Heart, ShoppingBag, Eye, Star, Zap } from 'lucide-react';
 import { ProductImage } from '@/components/ui/ProductImage';
 import { useCart } from '@/lib/cart-store';
@@ -23,9 +23,28 @@ export function ProductCard({ product, index = 0, inView = true, onQuickView }: 
   const [adding,    setAdding]    = useState(false);
   const [selSize,   setSelSize]   = useState(product.sizes[0]);
   const [showSizes, setShowSizes] = useState(false);
+  const [hovered,   setHovered]   = useState(false);
+  const [photoIdx,  setPhotoIdx]  = useState(0);
   const cardRef  = useRef<HTMLDivElement>(null);
   const addItem  = useCart(s => s.addItem);
   const setOpen  = useCart(s => s.setOpen);
+
+  /* Ordered gallery for this card: primary image first, then the rest */
+  const gallery = (() => {
+    const imgs = product.images?.filter(i => i.url) || [];
+    const primary = imgs.find(i => i.isPrimary);
+    const rest = imgs.filter(i => i !== primary);
+    return primary ? [primary, ...rest] : rest;
+  })();
+
+  /* Auto-cycle through photos while the card is hovered */
+  useEffect(() => {
+    if (!hovered || gallery.length < 2) { setPhotoIdx(0); return; }
+    const id = setInterval(() => {
+      setPhotoIdx(i => (i + 1) % gallery.length);
+    }, 1100);
+    return () => clearInterval(id);
+  }, [hovered, gallery.length]);
 
   /* 3D tilt */
   const x  = useMotionValue(0);
@@ -41,7 +60,7 @@ export function ProductCard({ product, index = 0, inView = true, onQuickView }: 
     x.set((e.clientX - rect.left) / rect.width  - 0.5);
     y.set((e.clientY - rect.top)  / rect.height - 0.5);
   }
-  function onMouseLeave() { x.set(0); y.set(0); }
+  function onMouseLeave() { x.set(0); y.set(0); setHovered(false); }
 
   async function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault(); e.stopPropagation();
@@ -58,7 +77,7 @@ export function ProductCard({ product, index = 0, inView = true, onQuickView }: 
     setOpen(true);
   }
 
-  const primaryImage = product.images?.find(i => i.isPrimary)?.url || product.images?.[0]?.url || null;
+  const activeImage  = gallery[photoIdx]?.url || gallery[0]?.url || null;
   const lowestPrice  = Math.min(...product.sizes.map(s => s.price));
   const highestPrice = Math.max(...product.sizes.map(s => s.price));
 
@@ -69,22 +88,45 @@ export function ProductCard({ product, index = 0, inView = true, onQuickView }: 
       style={{ perspective: 800 }}>
       <motion.div ref={cardRef}
         style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
-        onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}
+        onMouseMove={onMouseMove} onMouseEnter={() => setHovered(true)} onMouseLeave={onMouseLeave}
         className="group relative bg-[#F8F8F6] hover:bg-[#F2F0EC] transition-colors duration-400 cursor-pointer">
 
         {/* Image area */}
         <div className="relative overflow-hidden" style={{ aspectRatio: '4/5' }}>
           <Link href={`/product/${product.slug}`}>
             <div className="relative w-full h-full">
-              <ProductImage
-                src={primaryImage}
-                alt={product.name}
-                color1={product.color1}
-                color2={product.color2}
-                fill
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className="transition-transform duration-700 group-hover:scale-[1.03]"
-              />
+              <AnimatePresence initial={false}>
+                <motion.div
+                  key={activeImage || 'placeholder'}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5, ease: 'easeInOut' }}
+                  className="absolute inset-0"
+                >
+                  <ProductImage
+                    src={activeImage}
+                    alt={product.name}
+                    color1={product.color1}
+                    color2={product.color2}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="transition-transform duration-700 group-hover:scale-[1.03]"
+                  />
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Gallery dots — only when there's more than one photo */}
+              {gallery.length > 1 && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5"
+                  style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.5))' }}>
+                  {gallery.map((_, i) => (
+                    <span key={i}
+                      className={cn('h-1 rounded-full transition-all duration-300',
+                        i === photoIdx ? 'w-4 bg-white' : 'w-1 bg-white/60')} />
+                  ))}
+                </div>
+              )}
             </div>
           </Link>
 

@@ -60,9 +60,9 @@ function BottlePlaceholder({
             <stop offset="100%" stopColor="rgba(255,255,255,0)" />
           </linearGradient>
           <linearGradient id={`${id}-gold`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%"   stopColor="#B5924C" />
-            <stop offset="50%"  stopColor="#D9BB6A" />
-            <stop offset="100%" stopColor="#B5924C" />
+            <stop offset="0%"   stopColor="#8A6D2E" />
+            <stop offset="50%"  stopColor="#AD8640" />
+            <stop offset="100%" stopColor="#8A6D2E" />
           </linearGradient>
           <linearGradient id={`${id}-label`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%"   stopColor="rgba(255,255,255,0.97)" />
@@ -109,7 +109,7 @@ function BottlePlaceholder({
         {/* Label */}
         <rect x="50"  y="148" width="80" height="76" rx="1.5" fill={`url(#${id}-label)`} />
         <rect x="53"  y="151" width="74" height="70" rx="1" fill="none" stroke={`${color1}22`} strokeWidth="0.5" />
-        <rect x="57"  y="155" width="66" height="62" rx="0.5" fill="none" stroke="rgba(181,146,76,0.25)" strokeWidth="0.5" />
+        <rect x="57"  y="155" width="66" height="62" rx="0.5" fill="none" stroke="rgba(138,109,46,0.3)" strokeWidth="0.5" />
 
         <text x="90" y="174" textAnchor="middle"
           fontFamily="Georgia,serif" fontStyle="italic" fontSize="13" fill="#0F0E0D" letterSpacing="0.5">

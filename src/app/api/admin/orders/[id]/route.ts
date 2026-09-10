@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Order } from '@/models';
 import { notifyOrderStatusChange } from '@/lib/notifications';
+import { auth } from '@/lib/auth';
+import { canAccessSection } from '@/lib/permissions';
+import type { UserRole } from '@/types';
 
 export const runtime = 'nodejs';
 
@@ -10,6 +13,12 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await auth();
+    const role = (session?.user as { role?: UserRole })?.role;
+    if (!canAccessSection(role, 'orders')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     await connectDB();
     const { status, trackingNumber, note } = await req.json();
 
@@ -59,6 +68,12 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await auth();
+    const role = (session?.user as { role?: UserRole })?.role;
+    if (!canAccessSection(role, 'orders')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     await connectDB();
     const order = await Order.findOne({
       $or: [

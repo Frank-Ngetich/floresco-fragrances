@@ -4,10 +4,8 @@ import { motion, useInView, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight, Play } from 'lucide-react';
 import NextImage from 'next/image';
-import { BottleSVG } from '@/components/ui/BottleSVG';
 import { ProductCard } from '@/components/shop/ProductCard';
 import { QuickViewModal } from '@/components/shop/QuickViewModal';
-import { PRODUCTS_DATA } from '@/lib/products-data';
 import type { IProduct } from '@/types';
 
 const T = { ease: [0.16, 1, 0.3, 1] as const };
@@ -113,19 +111,8 @@ export function HomeCategories({ images = {} }: { images?: Record<string, string
 }
 
 /* ── Featured Products ── */
-function toProduct(p: typeof PRODUCTS_DATA[0], i: number): IProduct {
-  return {
-    ...p, _id:`f-${i}`, status:'active',
-    sizes: p.sizes.map(s=>({...s})),
-    images: p.images.map(img=>({...img})),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-}
-
-export function HomeFeatured() {
+export function HomeFeatured({ products }: { products: IProduct[] }) {
   const [quickView, setQuickView] = useState<IProduct | null>(null);
-  const products = PRODUCTS_DATA.filter(p => p.featured).slice(0, 4).map(toProduct);
 
   return (
     <section className="py-20 bg-stone/[0.025]">
@@ -155,9 +142,9 @@ export function HomeFeatured() {
 
 /* ── Lifestyle ── */
 const LIFESTYLE = [
-  { label:'The Morning Ritual',  headline:'Begin with intention.',            body:'How you start the day shapes everything that follows. Your fragrance is the first signature you wear.', href:'/shop?cat=unisex',  category:'unisex',     cta:'Shop Fresh Scents',    bg:'from-[#F6EEE3] to-[#EDD8BE]',   dark:false, accent:'#8B3A44' },
-  { label:'Evening Luxury',      headline:'The night has its own language.', body:'For those evenings when every detail matters — choose a fragrance that commands the room before you speak.', href:'/shop?cat=arabian-oud', category:'arabian-oud', cta:'Shop Arabian & Oud', bg:'from-[#1A1218] to-[#2D1E24]', dark:true,  accent:'#D9A84E' },
-  { label:'The Gift of Scent',   headline:'The most personal gift.',         body:'Choosing a fragrance for someone tells them you know who they truly are — or who they aspire to be.', href:'/shop?cat=gift-sets', category:'gift-sets', cta:'Shop Gift Sets',      bg:'from-[#EEE5D9] to-[#DACCBA]',   dark:false, accent:'#722F37' },
+  { label:'The Morning Ritual',  headline:'Begin with intention.',            body:'How you start the day shapes everything that follows. Your fragrance is the first signature you wear.', href:'/shop?cat=unisex',  category:'unisex',     cta:'Shop Fresh Scents',    bg:'from-[#F6EEE3] to-[#EDD8BE]',   dark:false, accent:'#8A6D2E' },
+  { label:'Evening Luxury',      headline:'The night has its own language.', body:'For those evenings when every detail matters — choose a fragrance that commands the room before you speak.', href:'/shop?cat=arabian-oud', category:'arabian-oud', cta:'Shop Arabian & Oud', bg:'from-[#1A1218] to-[#2D1E24]', dark:true,  accent:'#C9A455' },
+  { label:'The Gift of Scent',   headline:'The most personal gift.',         body:'Choosing a fragrance for someone tells them you know who they truly are — or who they aspire to be.', href:'/shop?cat=gift-sets', category:'gift-sets', cta:'Shop Gift Sets',      bg:'from-[#EEE5D9] to-[#DACCBA]',   dark:false, accent:'#AD8640' },
 ];
 
 export function LifestyleSection({ images = {} }: { images?: Record<string, string | null> }) {

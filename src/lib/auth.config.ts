@@ -39,9 +39,10 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user }) {
       const now = Date.now();
       if (user) {
-        token.role       = (user as { role?: UserRole }).role;
-        token.id         = user.id;
-        token.lastActive = now;
+        token.role               = (user as { role?: UserRole }).role;
+        token.id                 = user.id;
+        token.lastActive         = now;
+        token.mustChangePassword = (user as { mustChangePassword?: boolean }).mustChangePassword ?? false;
         return token;
       }
       const role       = token.role as UserRole | undefined;
@@ -56,6 +57,7 @@ export const authConfig: NextAuthConfig = {
       if (session.user) {
         (session.user as { role?: UserRole }).role = token.role as UserRole;
         (session.user as { id?: string }).id = token.id as string;
+        (session.user as { mustChangePassword?: boolean }).mustChangePassword = !!token.mustChangePassword;
       }
       return session;
     },

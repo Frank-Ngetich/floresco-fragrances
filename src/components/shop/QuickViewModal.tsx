@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, Heart, ArrowRight, Star, Check } from 'lucide-react';
 import Link from 'next/link';
@@ -14,9 +14,27 @@ export function QuickViewModal({ product, onClose }: Props) {
   const [selSize, setSelSize] = useState<IProduct['sizes'][0] | null>(null);
   const [adding,  setAdding]  = useState(false);
   const [loved,   setLoved]   = useState(false);
+  const [photoIdx, setPhotoIdx] = useState(0);
   const addItem = useCart(s => s.addItem);
   const setOpen = useCart(s => s.setOpen);
   const currentSize = selSize || product?.sizes[0];
+
+  const gallery = (() => {
+    const imgs = product?.images?.filter(i => i.url) || [];
+    const primary = imgs.find(i => i.isPrimary);
+    const rest = imgs.filter(i => i !== primary);
+    return primary ? [primary, ...rest] : rest;
+  })();
+
+  /* Reset to the primary photo whenever a different product opens */
+  useEffect(() => { setPhotoIdx(0); }, [product?._id]);
+
+  /* Auto-advance through the gallery while the modal is open */
+  useEffect(() => {
+    if (!product || gallery.length < 2) return;
+    const id = setInterval(() => setPhotoIdx(i => (i + 1) % gallery.length), 2600);
+    return () => clearInterval(id);
+  }, [product?._id, gallery.length]);
 
   async function handleAdd() {
     if (!product || !currentSize) return;
@@ -53,15 +71,34 @@ export function QuickViewModal({ product, onClose }: Props) {
               {/* Image / placeholder */}
               <div className="relative min-h-[300px] sm:min-h-[420px]"
                 style={{ background: `linear-gradient(145deg,${product.color2}22 0%,${product.color1}18 100%)` }}>
-                <ProductImage
-                  src={product.images?.find(i=>i.isPrimary)?.url || product.images?.[0]?.url || null}
-                  alt={product.name}
-                  color1={product.color1}
-                  color2={product.color2}
-                  fill
-                  className="object-contain p-8"
-                  sizes="(max-width: 820px) 100vw, 410px"
-                />
+                <AnimatePresence initial={false}>
+                  <motion.div
+                    key={gallery[photoIdx]?.url || 'placeholder'}
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5, ease: 'easeInOut' }}
+                    className="absolute inset-0"
+                  >
+                    <ProductImage
+                      src={gallery[photoIdx]?.url || null}
+                      alt={product.name}
+                      color1={product.color1}
+                      color2={product.color2}
+                      fill
+                      className="object-contain p-8"
+                      sizes="(max-width: 820px) 100vw, 410px"
+                    />
+                  </motion.div>
+                </AnimatePresence>
+
+                {gallery.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5">
+                    {gallery.map((_, i) => (
+                      <button key={i} onClick={() => setPhotoIdx(i)} aria-label={`Photo ${i + 1}`}
+                        className={cn('h-1.5 rounded-full transition-all duration-300',
+                          i === photoIdx ? 'w-5 bg-stone' : 'w-1.5 bg-stone/25 hover:bg-stone/45')} />
+                    ))}
+                  </div>
+                )}
               </div>
               {/* Info */}
               <div className="p-7 sm:p-9 flex flex-col">

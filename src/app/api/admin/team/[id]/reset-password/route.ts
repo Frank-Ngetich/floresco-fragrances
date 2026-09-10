@@ -31,6 +31,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
 
     const tempPassword = generateTempPassword();
     target.password = await bcrypt.hash(tempPassword, 12);
+    target.mustChangePassword = true;
     await target.save();
 
     return NextResponse.json({ tempPassword });

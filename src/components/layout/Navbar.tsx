@@ -76,23 +76,6 @@ export function Navbar() {
 
   return (
     <>
-      {/* Announcement bar */}
-      <div className="bg-stone text-cream-100 overflow-hidden relative">
-        <div className="flex items-center justify-center py-2.5 px-4">
-          <motion.div
-            animate={{ opacity: [1, 0, 1] }}
-            transition={{ duration: 6, repeat: Infinity, times: [0, 0.45, 0.55] }}
-            className="text-[0.62rem] tracking-[0.22em] uppercase text-center"
-          >
-            <span className="text-wine-300">✦</span>
-            {' '}Complimentary same-day delivery within Eldoret{' '}
-            <span className="text-wine-300">✦</span>
-            {' '}Pay via M-Pesa · Card · Cash on Delivery{' '}
-            <span className="text-wine-300">✦</span>
-          </motion.div>
-        </div>
-      </div>
-
       {/* Main nav */}
       <header className={cn(
         'sticky top-0 z-40 transition-all duration-500',
@@ -145,7 +128,7 @@ export function Navbar() {
               className="flex-1 lg:flex-none text-center lg:absolute lg:left-1/2 lg:-translate-x-1/2"
             >
               <span className="font-display text-[1.5rem] lg:text-[1.65rem] tracking-[0.3em] font-normal text-stone pl-[0.3em]">
-                FLORES<span className="text-wine-600">CO</span>
+                FLORES<span className="text-gold-500">CO</span>
               </span>
             </Link>
 
@@ -374,7 +357,7 @@ export function Navbar() {
             >
               {/* Drawer header */}
               <div className="flex items-center justify-between px-6 py-5 border-b border-stone/8">
-                <span className="font-display text-xl tracking-[0.3em]">FLORES<span className="text-wine-600">CO</span></span>
+                <span className="font-display text-xl tracking-[0.3em]">FLORES<span className="text-gold-500">CO</span></span>
                 <button onClick={() => setMobileOpen(false)} className="p-2 text-stone/40 hover:text-stone transition-colors">
                   <X size={20} strokeWidth={1.5} />
                 </button>
@@ -415,7 +398,7 @@ export function Navbar() {
                 <div className="text-[0.65rem] tracking-[0.22em] uppercase text-stone/40 mb-2">Visit us</div>
                 <div className="text-sm text-stone/60 leading-relaxed">
                   Kapsoya Business Park<br />Eldoret, Kenya<br />
-                  <a href="tel:+254700000000" className="text-wine-600 hover:text-wine-800 transition-colors">+254 7XX XXX XXX</a>
+                  <Link href="/contact" className="text-wine-600 hover:text-wine-800 transition-colors">Get in touch →</Link>
                 </div>
               </div>
             </motion.div>

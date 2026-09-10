@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { Hero } from '@/components/home/Hero';
 import { HomeMarquee, HomeCategories, HomeFeatured, LifestyleSection, HomeVisit } from '@/components/home/HomeSections';
 import { connectDB } from '@/lib/db';
-import { Product, SiteSettings } from '@/models';
-import { DEFAULT_HERO, type HeroData } from '@/lib/hero-defaults';
+import { Product } from '@/models';
+import { PRODUCTS_DATA } from '@/lib/products-data';
+import type { IProduct } from '@/types';
 
 export const metadata: Metadata = {
   title: 'Floresco — Luxury Fragrances & Lifestyle | Eldoret, Kenya',
@@ -36,25 +37,39 @@ async function getCategoryImages() {
   }
 }
 
-async function getHeroData(): Promise<HeroData> {
+async function getFeaturedProducts(): Promise<IProduct[]> {
   try {
     await connectDB();
-    const s = await SiteSettings.findOne({ key: 'hero' }).lean();
-    const value = (s as any)?.value;
-    return value ? { ...DEFAULT_HERO, ...value } : DEFAULT_HERO;
+    const products = await Product.find({ featured: true, status: 'active' })
+      .sort({ createdAt: -1 })
+      .limit(4)
+      .lean();
+    if (products.length > 0) return products as unknown as IProduct[];
   } catch {
-    return DEFAULT_HERO;
+    /* fall through to static fallback below */
   }
+  return PRODUCTS_DATA.filter((p) => p.featured).slice(0, 4).map((p, i) => ({
+    ...p,
+    _id: `f-${i}`,
+    status: 'active',
+    sizes: p.sizes.map((s) => ({ ...s })),
+    images: p.images.map((img) => ({ ...img })),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  })) as IProduct[];
 }
 
 export default async function HomePage() {
-  const [categoryImages, hero] = await Promise.all([getCategoryImages(), getHeroData()]);
+  const [categoryImages, featuredProducts] = await Promise.all([
+    getCategoryImages(),
+    getFeaturedProducts(),
+  ]);
   return (
     <>
-      <Hero hero={hero} />
+      <Hero />
       <HomeMarquee />
       <HomeCategories images={categoryImages} />
-      <HomeFeatured />
+      <HomeFeatured products={featuredProducts} />
       <LifestyleSection images={categoryImages} />
       <HomeVisit />
     </>

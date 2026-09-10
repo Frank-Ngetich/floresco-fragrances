@@ -19,6 +19,9 @@ function AuthPanel() {
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
   const [success,  setSuccess]  = useState('');
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent,  setForgotSent]  = useState(false);
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: '', phone: '', password: '',
   });
@@ -74,6 +77,55 @@ function AuthPanel() {
       }
     } catch { setError('Network error. Please try again.'); }
     setLoading(false);
+  }
+
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!forgotEmail.trim()) return;
+    setLoading(true);
+    try {
+      await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail.trim() }),
+      });
+    } catch {}
+    setForgotSent(true);
+    setLoading(false);
+  }
+
+  if (forgotMode) {
+    return (
+      <div className="min-h-[75vh] flex items-center justify-center px-6 py-20">
+        <div className="w-full max-w-[420px]">
+          <div className="text-center mb-10">
+            <div className="eyebrow mb-4">Account Recovery</div>
+            <h1 className="font-display text-4xl">Reset Password</h1>
+          </div>
+          {forgotSent ? (
+            <div className="flex items-start gap-3 bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-4">
+              <Check size={15} className="flex-shrink-0 mt-0.5" />
+              If an account exists for that email, a reset link has been sent. Check your inbox.
+            </div>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <Field label="Email *">
+                <input type="email" required autoComplete="email" value={forgotEmail}
+                  onChange={e => setForgotEmail(e.target.value)}
+                  className="input-luxury" placeholder="you@example.com" />
+              </Field>
+              <button type="submit" disabled={loading} className="btn-primary w-full justify-center mt-2 disabled:opacity-60">
+                {loading ? 'Sending…' : 'Send Reset Link'}
+              </button>
+            </form>
+          )}
+          <p className="text-center text-[0.8rem] text-stone/50 pt-6">
+            <button type="button" onClick={() => { setForgotMode(false); setForgotSent(false); setForgotEmail(''); }}
+              className="text-wine-600 font-medium hover:opacity-70">← Back to Sign In</button>
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -133,7 +185,7 @@ function AuthPanel() {
                 </div>
               </Field>
               <div className="flex justify-end">
-                <button type="button" className="text-[0.72rem] text-wine-600 hover:opacity-70 transition-opacity">
+                <button type="button" onClick={() => setForgotMode(true)} className="text-[0.72rem] text-wine-600 hover:opacity-70 transition-opacity">
                   Forgot password?
                 </button>
               </div>
@@ -219,7 +271,30 @@ function Dashboard({ session }: { session: { user: { name?: string | null; email
     email: session.user.email || '',
     phone: '',
   });
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwSaved,  setPwSaved]  = useState(false);
+  const [pwError,  setPwError]  = useState('');
   const firstName = (session.user.name || 'there').split(' ')[0];
+
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPwError(''); setPwSaved(false);
+    if (pwForm.next.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
+    if (pwForm.next !== pwForm.confirm) { setPwError('Passwords do not match.'); return; }
+    setPwSaving(true);
+    try {
+      const res = await fetch('/api/account/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: pwForm.current, newPassword: pwForm.next }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setPwError(data.error || 'Failed to change password.'); }
+      else { setPwSaved(true); setPwForm({ current: '', next: '', confirm: '' }); setTimeout(() => setPwSaved(false), 3000); }
+    } catch { setPwError('Network error. Please try again.'); }
+    setPwSaving(false);
+  }
 
   useEffect(() => {
     if (section !== 'orders') return;
@@ -358,8 +433,9 @@ function Dashboard({ session }: { session: { user: { name?: string | null; email
                       className="input-luxury" />
                   </Field>
                   <Field label="Email">
-                    <input type="email" value={profile.email} onChange={e => setProfile(p => ({ ...p, email: e.target.value }))}
-                      className="input-luxury" />
+                    <input type="email" value={profile.email} readOnly disabled
+                      className="input-luxury opacity-60 cursor-not-allowed" />
+                    <p className="text-xs text-stone/40 mt-1.5">Your email is your account login and can&apos;t be changed here — contact us if you need it updated.</p>
                   </Field>
                   <Field label="Phone">
                     <input value={profile.phone} onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))}
@@ -367,6 +443,30 @@ function Dashboard({ session }: { session: { user: { name?: string | null; email
                   </Field>
                   <button type="submit" disabled={saving} className="btn-primary disabled:opacity-60">
                     {saving ? 'Saving…' : saved ? <><Check size={14} /> Saved</> : 'Save Changes'}
+                  </button>
+                </form>
+
+                <h2 className="font-display text-2xl mb-6 mt-14 pt-10 border-t border-stone/10">Change Password</h2>
+                <form onSubmit={changePassword} className="space-y-5 max-w-md">
+                  <Field label="Current Password">
+                    <input type="password" required value={pwForm.current}
+                      onChange={e => setPwForm(p => ({ ...p, current: e.target.value }))} className="input-luxury" />
+                  </Field>
+                  <Field label="New Password (min 8 characters)">
+                    <input type="password" required value={pwForm.next}
+                      onChange={e => setPwForm(p => ({ ...p, next: e.target.value }))} className="input-luxury" />
+                  </Field>
+                  <Field label="Confirm New Password">
+                    <input type="password" required value={pwForm.confirm}
+                      onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))} className="input-luxury" />
+                  </Field>
+                  {pwError && (
+                    <div className="flex items-start gap-2 text-red-700 bg-red-50 border border-red-200 text-sm px-4 py-3">
+                      <AlertCircle size={14} className="flex-shrink-0 mt-0.5" /> {pwError}
+                    </div>
+                  )}
+                  <button type="submit" disabled={pwSaving} className="btn-primary disabled:opacity-60">
+                    {pwSaving ? 'Updating…' : pwSaved ? <><Check size={14} /> Updated</> : 'Update Password'}
                   </button>
                 </form>
               </div>

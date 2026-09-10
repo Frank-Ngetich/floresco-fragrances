@@ -131,7 +131,7 @@ export default function AdminOrders() {
             <button key={s.id} onClick={() => setFilter(s.id)}
               className={cn(
                 'flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded text-xs font-medium transition-all',
-                filter === s.id ? 'bg-wine-600 text-white' : 'text-white/50 hover:text-white'
+                filter === s.id ? 'bg-gold-600 text-white' : 'text-white/50 hover:text-white'
               )}>
               <s.icon size={11} />
               {s.label}
@@ -175,7 +175,7 @@ export default function AdminOrders() {
                   onClick={() => { setSelected(order); setNewStatus(order.status); }}
                   className={cn(
                     'bg-white/[0.04] border rounded-lg p-4 cursor-pointer transition-all hover:bg-white/[0.07]',
-                    selected?._id === order._id ? 'border-wine-500/50 bg-wine-600/10' : 'border-white/10'
+                    selected?._id === order._id ? 'border-gold-500/50 bg-gold-600/10' : 'border-white/10'
                   )}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
@@ -293,7 +293,7 @@ export default function AdminOrders() {
                 <div className="space-y-2">
                   {selected.statusHistory.map((h, i) => (
                     <div key={i} className="flex items-start gap-3 text-xs">
-                      <div className="w-1.5 h-1.5 rounded-full bg-wine-500 flex-shrink-0 mt-1.5" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-gold-500 flex-shrink-0 mt-1.5" />
                       <div>
                         <span className="capitalize text-white/70 font-medium">{h.status}</span>
                         <span className="text-white/30 ml-2">
@@ -326,7 +326,7 @@ export default function AdminOrders() {
                     className="w-full bg-white/[0.06] border border-white/15 text-white text-sm px-3 py-2.5 rounded focus:outline-none placeholder:text-white/30 resize-none" />
                   <button onClick={updateStatus}
                     disabled={updating || newStatus === selected.status}
-                    className="w-full flex items-center justify-center gap-2 bg-wine-600 hover:bg-wine-700 disabled:opacity-50 text-white text-xs tracking-[0.14em] uppercase py-2.5 rounded transition-colors">
+                    className="w-full flex items-center justify-center gap-2 bg-gold-600 hover:bg-gold-700 disabled:opacity-50 text-white text-xs tracking-[0.14em] uppercase py-2.5 rounded transition-colors">
                     {updating ? <RefreshCw size={12} className="animate-spin" /> : updateOk ? <CheckCircle size={12} /> : <Send size={12} />}
                     {updating ? 'Updating…' : updateOk ? 'Updated!' : 'Update & Notify Customer'}
                   </button>

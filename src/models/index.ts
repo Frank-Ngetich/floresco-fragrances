@@ -43,6 +43,11 @@ const UserSchema = new Schema({
   name:     { type: String, required: true },
   phone:    String,
   role:     { type: String, enum: ['customer','staff','manager','owner'], default: 'customer' },
+  // Forces a password change on next login — set when a team account is
+  // created or reset with a temp password relayed out-of-band.
+  mustChangePassword: { type: Boolean, default: false },
+  resetToken:         { type: String, select: false },
+  resetTokenExpiry:   { type: Date, select: false },
   addresses: [{
     label: String, street: String, city: String,
     county: String, isDefault: Boolean,
@@ -145,6 +150,15 @@ const SiteSettingsSchema = new Schema({
 }, { timestamps: true });
 
 export const SiteSettings = models.SiteSettings || model('SiteSettings', SiteSettingsSchema);
+
+// ============================================================
+// NEWSLETTER SUBSCRIBER
+// ============================================================
+const SubscriberSchema = new Schema({
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
+}, { timestamps: true });
+
+export const Subscriber = models.Subscriber || model('Subscriber', SubscriberSchema);
 
 // ============================================================
 // AUDIT LOG

@@ -4,28 +4,24 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, Package, ShoppingBag, Users, MessageSquare,
-  Settings, LogOut, Store, Menu, X, Image, FileText,
-  BarChart2, Home, ChevronDown, Bell, Search, ShieldAlert
+  LayoutDashboard, Package, ShoppingBag, MessageSquare,
+  Settings, LogOut, Store, Menu, X, Image,
+  ChevronDown, Bell, Search, ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { canAccessSection, type AdminSection } from '@/lib/permissions';
 import type { UserRole } from '@/types';
 
-const NAV: { href: string; icon: any; label: string; group: string; badge?: number; section: AdminSection }[] = [
-  { href: '/admin',            icon: LayoutDashboard, label: 'Dashboard',    group: 'Main',    section: 'dashboard' },
-  { href: '/admin/hero',       icon: Home,            label: 'Hero & Banner',group: 'Content', section: 'hero' },
-  { href: '/admin/media',      icon: Image,           label: 'Media Library',group: 'Content', section: 'media' },
-  { href: '/admin/products',   icon: Package,         label: 'Products',     group: 'Store',   section: 'products' },
-  { href: '/admin/orders',     icon: ShoppingBag,     label: 'Orders',       group: 'Store',   section: 'orders', badge: 7 },
-  { href: '/admin/customers',  icon: Users,           label: 'Customers',    group: 'Store',   section: 'customers' },
-  { href: '/admin/inquiries',  icon: MessageSquare,   label: 'Inquiries',    group: 'Store',   section: 'inquiries', badge: 3 },
-  { href: '/admin/blog',       icon: FileText,        label: 'Blog / Journal',group:'Content', section: 'blog' },
-  { href: '/admin/analytics',  icon: BarChart2,       label: 'Analytics',    group: 'Reports', section: 'analytics' },
-  { href: '/admin/settings',   icon: Settings,        label: 'Settings',     group: 'System',  section: 'settings' },
+const NAV: { href: string; icon: any; label: string; group: string; section: AdminSection }[] = [
+  { href: '/admin',            icon: LayoutDashboard, label: 'Dashboard',    group: 'Main',  section: 'dashboard' },
+  { href: '/admin/products',   icon: Package,         label: 'Products',     group: 'Store', section: 'products' },
+  { href: '/admin/orders',     icon: ShoppingBag,     label: 'Orders',       group: 'Store', section: 'orders' },
+  { href: '/admin/inquiries',  icon: MessageSquare,   label: 'Inquiries',    group: 'Store', section: 'inquiries' },
+  { href: '/admin/media',      icon: Image,           label: 'Media Library',group: 'Store', section: 'media' },
+  { href: '/admin/settings',   icon: Settings,        label: 'Settings',     group: 'System',section: 'settings' },
 ];
 
-const GROUPS = ['Main','Content','Store','Reports','System'];
+const GROUPS = ['Main','Store','System'];
 
 interface Props {
   children: React.ReactNode;
@@ -40,8 +36,16 @@ export function AdminShell({ children, session }: Props) {
   const [search, setSearch]   = useState('');
   const [notifs, setNotifs]   = useState(true);
   const [showDenied, setShowDenied] = useState(denied);
+  const [newInquiries, setNewInquiries] = useState(0);
 
   useEffect(() => { setShowDenied(denied); }, [denied]);
+
+  useEffect(() => {
+    fetch('/api/admin/inquiries?status=new')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setNewInquiries(d.newCount || 0); })
+      .catch(() => {});
+  }, [pathname]);
 
   /* Close drawer on route change */
   useEffect(() => { setOpen(false); }, [pathname]);
@@ -67,7 +71,7 @@ export function AdminShell({ children, session }: Props) {
       <div className="px-5 py-5 border-b border-white/10 flex items-center justify-between">
         <div>
           <div className="font-display text-xl tracking-[0.3em] text-white">
-            FLORES<span className="text-wine-400">CO</span>
+            FLORES<span className="text-gold-400">CO</span>
           </div>
           <div className="text-[0.58rem] tracking-[0.22em] uppercase text-white/40 mt-0.5">Admin Panel</div>
         </div>
@@ -106,15 +110,15 @@ export function AdminShell({ children, session }: Props) {
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 group relative',
                       active
-                        ? 'bg-wine-600/25 text-white border-l-2 border-wine-400 ml-0 pl-3'
+                        ? 'bg-gold-600/25 text-white border-l-2 border-gold-400 ml-0 pl-3'
                         : 'text-white/60 hover:text-white hover:bg-white/[0.05]'
                     )}
                   >
                     <item.icon size={16} strokeWidth={active ? 2 : 1.6} className="flex-shrink-0" />
                     <span className="flex-1">{item.label}</span>
-                    {item.badge && (
-                      <span className="bg-wine-600 text-white text-[0.58rem] font-bold w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">
-                        {item.badge}
+                    {item.section === 'inquiries' && newInquiries > 0 && (
+                      <span className="bg-gold-600 text-white text-[0.58rem] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center flex-shrink-0">
+                        {newInquiries}
                       </span>
                     )}
                   </Link>
@@ -138,7 +142,7 @@ export function AdminShell({ children, session }: Props) {
           <span>Sign Out</span>
         </Link>
         <div className="flex items-center gap-3 px-3 py-2.5 mt-1">
-          <div className="w-8 h-8 rounded-full bg-wine-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-gold-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
             {initials}
           </div>
           <div className="flex-1 min-w-0">
@@ -207,19 +211,19 @@ export function AdminShell({ children, session }: Props) {
               onClick={() => setNotifs(false)}>
               <Bell size={18} strokeWidth={1.5} />
               {notifs && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-wine-600 rounded-full" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-gold-600 rounded-full" />
               )}
             </button>
 
             {/* Quick add product on mobile */}
             <Link href="/admin/products/new"
-              className="sm:hidden bg-wine-600 hover:bg-wine-700 text-white text-xs px-3 py-1.5 rounded transition-colors">
+              className="sm:hidden bg-gold-600 hover:bg-gold-700 text-white text-xs px-3 py-1.5 rounded transition-colors">
               + Add
             </Link>
 
             {/* User avatar */}
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-wine-700 flex items-center justify-center text-white text-xs font-bold">
+              <div className="w-8 h-8 rounded-full bg-gold-700 flex items-center justify-center text-white text-xs font-bold">
                 {initials}
               </div>
               <div className="hidden md:block">

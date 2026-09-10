@@ -1,23 +1,23 @@
 'use client';
 import { useState, useRef } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
-import { MapPin, Clock, Phone, Mail, Plus, Minus, Send, CheckCircle } from 'lucide-react';
+import { MapPin, Clock, Phone, Mail, Plus, Minus, Send, CheckCircle, AlertCircle } from 'lucide-react';
 
 const T = { ease: [0.16, 1, 0.3, 1] as const };
 
-const FAQS = [
+const FAQS: { q: string; a: string; id?: string }[] = [
   { q: 'Are all your fragrances 100% authentic?', a: 'Yes, unequivocally. Every bottle is sourced through authorised distributors and comes with its original packaging, batch code, and quality seal. We stake our reputation on it.' },
-  { q: 'How does delivery work in Eldoret?', a: 'Orders placed before 3 PM are delivered the same day within Eldoret town. Delivery within Eldoret is free on orders above KES 10,000, otherwise KES 300.' },
+  { q: 'How does delivery work in Eldoret?', a: 'Orders placed before 3 PM are delivered the same day within Eldoret town. Delivery within Eldoret is free on orders above KES 10,000, otherwise KES 300.', id: 'ship' },
   { q: 'Do you deliver countrywide?', a: 'Yes — to all 47 counties via G4S, Fargo Courier, or Sendy. Standard delivery arrives in 1–3 business days. Free on orders above KES 10,000.' },
   { q: 'What payment methods do you accept?', a: 'M-Pesa STK Push (recommended), Visa, Mastercard, cash on delivery within Eldoret, and bank transfer for larger orders.' },
   { q: 'Can I return a fragrance I don\'t like?', a: 'Unopened, unused bottles can be returned within 7 days for a full refund. Once unsealed, returns are not possible for hygiene reasons — which is why we encourage in-store sampling.' },
   { q: 'Can I book a personal consultation?', a: 'Walk in during opening hours or call ahead. Our team will guide you through scent families and help you find your signature scent.' },
 ];
 
-function FAQItem({ q, a }: { q: string; a: string }) {
+function FAQItem({ q, a, id }: { q: string; a: string; id?: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-stone/8">
+    <div id={id} className="border-b border-stone/8 scroll-mt-28">
       <button onClick={() => setOpen(!open)}
         className="w-full text-left py-5 flex items-center justify-between gap-4 group">
         <span className="font-display text-lg group-hover:text-wine-600 transition-colors pr-4">{q}</span>
@@ -42,6 +42,7 @@ export function ContactClient() {
   const [form,    setForm]    = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [sending, setSending] = useState(false);
   const [sent,    setSent]    = useState(false);
+  const [error,   setError]   = useState('');
   const heroRef = useRef<HTMLDivElement>(null);
   const heroIn  = useInView(heroRef, { once: true });
   const formRef = useRef<HTMLDivElement>(null);
@@ -53,12 +54,18 @@ export function ContactClient() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setSending(true);
+    setError('');
     try {
-      await fetch('/api/inquiry', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
-    } catch {}
-    await new Promise(r => setTimeout(r, 700));
+      const res = await fetch('/api/inquiry', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to send your message. Please try again.');
+      }
+      setSent(true);
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again, or reach us on WhatsApp.');
+    }
     setSending(false);
-    setSent(true);
   }
 
   return (
@@ -124,6 +131,12 @@ export function ContactClient() {
               </motion.div>
             ) : (
               <form onSubmit={submit} className="space-y-5">
+                {error && (
+                  <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+                    <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
+                    {error}
+                  </div>
+                )}
                 <div className="grid sm:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-[0.62rem] tracking-[0.18em] uppercase text-stone/40 mb-2">Name *</label>
@@ -157,7 +170,7 @@ export function ContactClient() {
       </div>
 
       {/* FAQ */}
-      <section className="bg-stone/[0.025] py-24">
+      <section id="faq" className="bg-stone/[0.025] py-24">
         <div className="max-w-2xl mx-auto px-6">
           <motion.div ref={faqRef} initial={{ opacity: 0, y: 24 }} animate={faqIn ? { opacity: 1, y: 0 } : {}} transition={{ ...T, duration: 0.8 }}
             className="text-center mb-14">

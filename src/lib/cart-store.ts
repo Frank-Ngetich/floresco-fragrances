@@ -7,11 +7,13 @@ import { cartTotal, cartCount } from './utils';
 interface CartStore {
   items: CartItem[];
   isOpen: boolean;
+  discountCode: string | null;
   addItem: (item: CartItem) => void;
   removeItem: (productId: string, size: string) => void;
   updateQuantity: (productId: string, size: string, quantity: number) => void;
   clearCart: () => void;
   setOpen: (open: boolean) => void;
+  setDiscountCode: (code: string | null) => void;
   total: () => number;
   count: () => number;
 }
@@ -21,6 +23,7 @@ export const useCart = create<CartStore>()(
     (set, get) => ({
       items: [],
       isOpen: false,
+      discountCode: null,
       addItem: (item) =>
         set((state) => {
           const idx = state.items.findIndex(
@@ -45,8 +48,9 @@ export const useCart = create<CartStore>()(
                 i.productId === productId && i.size === size ? { ...i, quantity } : i
               ),
         })),
-      clearCart: () => set({ items: [] }),
+      clearCart: () => set({ items: [], discountCode: null }),
       setOpen: (open) => set({ isOpen: open }),
+      setDiscountCode: (code) => set({ discountCode: code }),
       total: () => cartTotal(get().items),
       count: () => cartCount(get().items),
     }),
