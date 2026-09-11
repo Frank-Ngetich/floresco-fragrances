@@ -3,6 +3,8 @@ const nextConfig = {
   transpilePackages: ['framer-motion'],
 
   images: {
+    loader: 'custom',
+    loaderFile: './image-loader.ts',
     minimumCacheTTL: 31536000, // 1 year — uploaded filenames are timestamp-prefixed, so a given URL's content never changes
     remotePatterns: [
       /* Cloudflare R2 public bucket */
