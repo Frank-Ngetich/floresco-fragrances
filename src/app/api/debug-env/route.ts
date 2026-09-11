@@ -15,6 +15,12 @@ export async function GET() {
     hasMongoUri: !!process.env.MONGODB_URI,
     hasNextAuthUrl: !!process.env.NEXTAUTH_URL,
     hasR2AccountId: !!process.env.R2_ACCOUNT_ID,
+    hasMpesaConsumerKey:    !!process.env.MPESA_CONSUMER_KEY,
+    hasMpesaConsumerSecret: !!process.env.MPESA_CONSUMER_SECRET,
+    hasMpesaShortcode:      !!process.env.MPESA_SHORTCODE,
+    hasMpesaPasskey:        !!process.env.MPESA_PASSKEY,
+    mpesaCallbackUrl:       process.env.MPESA_CALLBACK_URL || null,
+    mpesaEnvironment:       process.env.MPESA_ENVIRONMENT || null,
     mongoUriHost: process.env.MONGODB_URI?.split('@')[1]?.split('/')[0] || null,
     mongoUriDbName: process.env.MONGODB_URI?.split('/').pop()?.split('?')[0] || null,
   };
