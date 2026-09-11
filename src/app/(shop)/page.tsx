@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   title: 'Floresco — Luxury Fragrances & Lifestyle | Eldoret, Kenya',
 };
 
+// Cache the rendered homepage for 5 minutes instead of re-querying MongoDB
+// on every single visit — featured products and category photos don't
+// change minute to minute, and this is the most-visited page on the site.
+export const revalidate = 300;
+
 const CATEGORY_IDS = ['women', 'men', 'arabian-oud', 'unisex', 'gift-sets'];
 
 async function getCategoryImages() {

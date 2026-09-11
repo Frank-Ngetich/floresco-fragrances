@@ -6,6 +6,10 @@ import { Product } from '@/models';
 import { PRODUCTS_DATA } from '@/lib/products-data';
 import type { IProduct } from '@/types';
 
+// Shorter cache window than the homepage since price/stock live here —
+// still avoids hitting MongoDB on every single page view.
+export const revalidate = 60;
+
 interface Props { params: { slug: string } }
 
 function fromStatic(slug: string): IProduct | undefined {

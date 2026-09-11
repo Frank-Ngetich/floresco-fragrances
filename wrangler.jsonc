@@ -20,12 +20,13 @@
       "head_sampling_rate": 1,
       "persist": true
     }
-  }
+  },
 
-  // Optional: create a KV namespace and uncomment to enable Next.js
-  // data-cache (ISR/revalidate) support on Cloudflare Workers.
-  // Run: npx wrangler kv namespace create NEXT_CACHE_WORKERS_KV
-  // "kv_namespaces": [
-  //   { "binding": "NEXT_CACHE_WORKERS_KV", "id": "<BINDING_ID>" }
-  // ]
+  "kv_namespaces": [
+    { "binding": "NEXT_CACHE_WORKERS_KV", "id": "7dff21b38a2b486ca2ec2cae5d3b89ff" }
+  ],
+
+  "r2_buckets": [
+    { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "floresco-next-cache" }
+  ]
 }
