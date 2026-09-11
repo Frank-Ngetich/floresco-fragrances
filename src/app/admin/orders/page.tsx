@@ -1,11 +1,13 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, X, Package, Truck, CheckCircle,
-  AlertCircle, Clock, Send, RefreshCw,
+  AlertCircle, Clock, Send, RefreshCw, Bell,
 } from 'lucide-react';
 import { formatKES, cn } from '@/lib/utils';
+
+const POLL_MS = 20000;
 
 type Status = 'all' | 'pending' | 'confirmed' | 'packed' | 'shipped' | 'delivered' | 'cancelled';
 
@@ -55,23 +57,47 @@ export default function AdminOrders() {
   const [tracking,  setTracking]  = useState('');
   const [updating,  setUpdating]  = useState(false);
   const [updateOk,  setUpdateOk]  = useState(false);
+  const [newArrivals, setNewArrivals] = useState<Order[]>([]);
+  const knownOrderIds = useRef<Set<string> | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const params = new URLSearchParams({ limit: '100' });
       if (filter !== 'all') params.set('status', filter);
       const res  = await fetch(`/api/orders?${params}`);
       const data = await res.json();
-      setOrders(data.orders || []);
+      const fetched: Order[] = data.orders || [];
+
+      /* Detect genuinely new orders arriving since the last poll — skip the
+         very first load, that's just populating the view, not "new". */
+      if (knownOrderIds.current) {
+        const arrivals = fetched.filter(o => !knownOrderIds.current!.has(o._id));
+        if (arrivals.length) {
+          setNewArrivals(prev => [...arrivals, ...prev].slice(0, 5));
+          arrivals.forEach(o => setTimeout(() => dismissArrival(o._id), 12000));
+        }
+      }
+      knownOrderIds.current = new Set(fetched.map(o => o._id));
+
+      setOrders(fetched);
       setTotal(data.total || 0);
     } catch {
-      setOrders([]);
+      if (!silent) setOrders([]);
     }
-    setLoading(false);
+    if (!silent) setLoading(false);
   }, [filter]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    knownOrderIds.current = null; // reset "seen" set when the filter changes
+    load();
+    const id = setInterval(() => load(true), POLL_MS);
+    return () => clearInterval(id);
+  }, [load]);
+
+  function dismissArrival(id: string) {
+    setNewArrivals(prev => prev.filter(o => o._id !== id));
+  }
 
   const filtered = orders.filter(o => {
     if (!query) return true;
@@ -111,6 +137,33 @@ export default function AdminOrders() {
 
   return (
     <div className="flex gap-6 min-h-0">
+      {/* New order toasts */}
+      <div className="fixed top-20 right-4 z-50 flex flex-col gap-2 w-[320px]">
+        <AnimatePresence>
+          {newArrivals.map(order => (
+            <motion.div key={order._id}
+              initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
+              className="bg-[#1A1714] border border-gold-500/40 rounded-lg shadow-2xl p-4 cursor-pointer"
+              onClick={() => { setSelected(order); setNewStatus(order.status); dismissArrival(order._id); }}>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-gold-600/20 flex items-center justify-center flex-shrink-0">
+                  <Bell size={14} className="text-gold-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-white font-medium">New order received</div>
+                  <div className="text-xs text-white/50 mt-0.5 font-mono">{order.orderNumber}</div>
+                  <div className="text-xs text-white/40 mt-0.5">{order.customer.name} · {formatKES(order.total)}</div>
+                </div>
+                <button onClick={e => { e.stopPropagation(); dismissArrival(order._id); }}
+                  className="text-white/30 hover:text-white transition-colors flex-shrink-0">
+                  <X size={14} />
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
       {/* Orders list */}
       <div className={cn('flex-1 space-y-5 min-w-0', selected && 'hidden lg:block lg:max-w-[55%]')}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -118,7 +171,7 @@ export default function AdminOrders() {
             <h1 className="text-2xl font-display">Orders</h1>
             <p className="text-white/50 text-sm mt-1">{total} total orders</p>
           </div>
-          <button onClick={load} disabled={loading}
+          <button onClick={() => load()} disabled={loading}
             className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white text-xs tracking-wide uppercase px-4 py-2 rounded transition-colors disabled:opacity-50 self-start">
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
             Refresh

@@ -34,18 +34,29 @@ export function AdminShell({ children, session }: Props) {
   const denied        = searchParams.get('denied') === '1';
   const [open, setOpen]       = useState(false);
   const [search, setSearch]   = useState('');
-  const [notifs, setNotifs]   = useState(true);
   const [showDenied, setShowDenied] = useState(denied);
   const [newInquiries, setNewInquiries] = useState(0);
+  const [pendingOrders, setPendingOrders] = useState(0);
 
   useEffect(() => { setShowDenied(denied); }, [denied]);
 
+  /* Poll for new inquiries/orders every 30s so staff notice them without
+     having to navigate to that section first. */
   useEffect(() => {
-    fetch('/api/admin/inquiries?status=new')
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setNewInquiries(d.newCount || 0); })
-      .catch(() => {});
-  }, [pathname]);
+    const load = () => {
+      fetch('/api/admin/inquiries?status=new')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setNewInquiries(d.newCount || 0); })
+        .catch(() => {});
+      fetch('/api/admin/stats')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setPendingOrders(d.pendingOrders || 0); })
+        .catch(() => {});
+    };
+    load();
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
+  }, []);
 
   /* Close drawer on route change */
   useEffect(() => { setOpen(false); }, [pathname]);
@@ -119,6 +130,11 @@ export function AdminShell({ children, session }: Props) {
                     {item.section === 'inquiries' && newInquiries > 0 && (
                       <span className="bg-gold-600 text-white text-[0.58rem] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center flex-shrink-0">
                         {newInquiries}
+                      </span>
+                    )}
+                    {item.section === 'orders' && pendingOrders > 0 && (
+                      <span className="bg-gold-600 text-white text-[0.58rem] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center flex-shrink-0">
+                        {pendingOrders}
                       </span>
                     )}
                   </Link>
@@ -206,14 +222,15 @@ export function AdminShell({ children, session }: Props) {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Notification bell */}
-            <button className="relative p-2 text-white/50 hover:text-white transition-colors"
-              onClick={() => setNotifs(false)}>
+            {/* Notification bell — reflects real pending orders + new inquiries */}
+            <Link href="/admin/orders" className="relative p-2 text-white/50 hover:text-white transition-colors" title="Pending orders">
               <Bell size={18} strokeWidth={1.5} />
-              {notifs && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-gold-600 rounded-full" />
+              {(pendingOrders + newInquiries) > 0 && (
+                <span className="absolute top-0.5 right-0.5 bg-gold-600 text-white text-[0.55rem] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center">
+                  {pendingOrders + newInquiries}
+                </span>
               )}
-            </button>
+            </Link>
 
             {/* Quick add product on mobile */}
             <Link href="/admin/products/new"
