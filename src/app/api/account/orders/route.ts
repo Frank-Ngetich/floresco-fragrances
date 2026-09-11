@@ -11,10 +11,18 @@ export async function GET(_req: NextRequest) {
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
     }
+    const userId = (session.user as { id?: string }).id;
 
     await connectDB();
 
-    const orders = await Order.find({ 'customer.email': session.user.email.toLowerCase() })
+    /* Match by account ID first (reliable, set on every order going forward)
+       and fall back to email for orders placed before this existed. */
+    const orders = await Order.find({
+      $or: [
+        ...(userId ? [{ 'customer.userId': userId }] : []),
+        { 'customer.email': session.user.email.toLowerCase() },
+      ],
+    })
       .sort({ createdAt: -1 })
       .select('orderNumber status createdAt items total payment')
       .lean();

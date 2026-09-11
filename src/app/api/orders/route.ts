@@ -31,8 +31,14 @@ export async function POST(req: NextRequest) {
     const discountAmount = calcDiscount(discount?.code, Number(subtotal) || 0);
     const recomputedTotal = (Number(subtotal) || 0) + Number(delivery?.fee ?? 0) - discountAmount;
 
+    /* If the shopper is logged in, tag the order with their real account ID
+       so it reliably shows up in their order history even if the email they
+       typed at checkout doesn't exactly match their account email. */
+    const session = await auth();
+    const sessionUserId = (session?.user as { id?: string } | undefined)?.id;
+
     /* Ensure customer record exists (upsert by email) */
-    await User.findOneAndUpdate(
+    const customerUser = await User.findOneAndUpdate(
       { email: customer.email.toLowerCase() },
       {
         $setOnInsert: {
@@ -50,9 +56,10 @@ export async function POST(req: NextRequest) {
     const order = await Order.create({
       orderNumber,
       customer: {
-        name:  customer.name,
-        email: customer.email.toLowerCase(),
-        phone: customer.phone,
+        userId: sessionUserId || customerUser._id,
+        name:   customer.name,
+        email:  customer.email.toLowerCase(),
+        phone:  customer.phone,
       },
       items: items.map((i: any) => ({
         productId: i.productId,

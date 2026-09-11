@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { Check, ChevronRight, AlertCircle, Loader2 } from 'lucide-react';
@@ -37,6 +38,7 @@ interface CheckoutForm {
 
 export function CheckoutClient() {
   const { items, total, clearCart, discountCode } = useCart();
+  const { data: session } = useSession();
   const [mounted,  setMounted]  = useState(false);
   const [step,     setStep]     = useState<Step>('details');
   const [delivery, setDelivery] = useState<'pickup' | 'courier'>('courier');
@@ -51,6 +53,19 @@ export function CheckoutClient() {
   });
 
   useEffect(() => { setMounted(true); }, []);
+
+  /* Pre-fill from the logged-in account so the order is placed under the
+     same email/name the customer will look for it under in "My Orders" */
+  useEffect(() => {
+    if (!session?.user) return;
+    const [firstName, ...rest] = (session.user.name || '').split(' ');
+    setForm(p => ({
+      ...p,
+      firstName: p.firstName || firstName || '',
+      lastName:  p.lastName  || rest.join(' ') || '',
+      email:     p.email     || session.user!.email || '',
+    }));
+  }, [session]);
 
   const up = (k: keyof CheckoutForm, v: string) => {
     setForm(p => ({ ...p, [k]: v }));
