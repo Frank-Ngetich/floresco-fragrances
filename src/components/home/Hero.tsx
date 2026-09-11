@@ -99,7 +99,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
       className="relative min-h-[96vh] flex items-center overflow-hidden"
     >
       {/* ── Background ───────────────────────────────── */}
-      <motion.div style={{ scale: bgScale }} className="absolute inset-0">
+      <motion.div style={{ scale: bgScale, willChange: 'transform' }} className="absolute inset-0">
         <div className="absolute inset-0"
           style={{
             background: `
@@ -109,14 +109,16 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
             `,
           }}
         />
-        {/* Noise texture */}
-        <div className="absolute inset-0 opacity-[0.35]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E")`,
-            backgroundSize: '128px',
-          }}
-        />
       </motion.div>
+
+      {/* Noise texture — kept outside the scaling layer so it paints once
+          instead of being re-rasterized on every scroll frame */}
+      <div className="absolute inset-0 opacity-[0.35] pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E")`,
+          backgroundSize: '128px',
+        }}
+      />
 
       {/* ── Ambient orbs ─────────────────────────────── */}
       {mounted && !reduceMotion && (
@@ -179,7 +181,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
 
         {/* ── LEFT: Content ────────────────────────── */}
         <motion.div
-          style={{ y: textY }}
+          style={{ y: textY, willChange: 'transform' }}
           variants={STAGGER} initial="hidden" animate="show"
           className="relative z-10 max-w-[560px]"
         >
@@ -279,7 +281,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
 
         {/* ── RIGHT: Bottle stage ───────────────────── */}
         <motion.div
-          style={{ y: bottleY, opacity: heroOp, x: springX }}
+          style={{ y: bottleY, opacity: heroOp, x: springX, willChange: 'transform, opacity' }}
           className="relative flex items-center justify-center
                      h-[480px] lg:h-[680px] w-full"
         >

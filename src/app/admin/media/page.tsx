@@ -203,8 +203,7 @@ export default function AdminMedia() {
                 <p><span className="text-white/80 font-medium">Step 1:</span> Go to <a href="https://dash.cloudflare.com" target="_blank" rel="noopener noreferrer" className="text-gold-300 hover:text-gold-200">dash.cloudflare.com</a> → R2 Object Storage → Create bucket named <code className="bg-white/10 px-1 rounded">floresco-media</code></p>
                 <p><span className="text-white/80 font-medium">Step 2:</span> R2 → Manage R2 API Tokens → Create token with <em>Object Read & Write</em> permission</p>
                 <p><span className="text-white/80 font-medium">Step 3:</span> Set the bucket to <em>Public</em> or connect a custom domain as R2_PUBLIC_URL</p>
-                <p><span className="text-white/80 font-medium">Step 4:</span> Run <code className="bg-white/10 px-1 rounded">npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner</code></p>
-                <p><span className="text-white/80 font-medium">Step 5:</span> Restart npm run dev</p>
+                <p><span className="text-white/80 font-medium">Step 4:</span> Restart npm run dev</p>
               </div>
               <button onClick={loadFiles}
                 className="mt-6 flex items-center gap-2 bg-gold-600 hover:bg-gold-700 text-white text-xs tracking-[0.14em] uppercase px-5 py-2.5 rounded transition-colors">

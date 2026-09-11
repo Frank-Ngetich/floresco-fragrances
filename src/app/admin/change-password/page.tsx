@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { signOut } from 'next-auth/react';
-import { KeyRound, Check, AlertTriangle } from 'lucide-react';
+import { KeyRound, Check, AlertTriangle, X } from 'lucide-react';
+import { passwordChecklist, isPasswordStrong } from '@/lib/password';
 
 export default function ForcedChangePassword() {
   const [current, setCurrent] = useState('');
@@ -14,7 +15,7 @@ export default function ForcedChangePassword() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    if (next.length < 8) { setError('New password must be at least 8 characters.'); return; }
+    if (!isPasswordStrong(next)) { setError('Please choose a stronger password — see the requirements below.'); return; }
     if (next !== confirm) { setError('Passwords do not match.'); return; }
 
     setSaving(true);
@@ -53,12 +54,24 @@ export default function ForcedChangePassword() {
             <input type="password" required value={current} onChange={e => setCurrent(e.target.value)} className="admin-input" />
           </div>
           <div>
-            <label className="block text-[0.62rem] tracking-[0.16em] uppercase text-white/40 mb-2 font-medium">New Password (min 8 characters)</label>
+            <label className="block text-[0.62rem] tracking-[0.16em] uppercase text-white/40 mb-2 font-medium">New Password</label>
             <input type="password" required value={next} onChange={e => setNext(e.target.value)} className="admin-input" />
+            {next && (
+              <ul className="mt-2.5 space-y-1">
+                {passwordChecklist(next).map(r => (
+                  <li key={r.key} className={`flex items-center gap-1.5 text-[0.72rem] transition-colors ${r.met ? 'text-green-400' : 'text-white/35'}`}>
+                    {r.met ? <Check size={11} /> : <X size={11} />} {r.label}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div>
             <label className="block text-[0.62rem] tracking-[0.16em] uppercase text-white/40 mb-2 font-medium">Confirm New Password</label>
             <input type="password" required value={confirm} onChange={e => setConfirm(e.target.value)} className="admin-input" />
+            {confirm && confirm !== next && (
+              <p className="mt-1.5 text-[0.72rem] text-red-400">Passwords do not match.</p>
+            )}
           </div>
           {error && (
             <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/30 text-red-300 text-sm px-4 py-3 rounded-lg">

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { connectDB } from '@/lib/db';
 import { User } from '@/models';
 import { auth } from '@/lib/auth';
+import { validatePassword } from '@/lib/password';
 
 export const runtime = 'nodejs';
 
@@ -17,8 +18,9 @@ export async function POST(req: NextRequest) {
     if (!currentPassword || !newPassword) {
       return NextResponse.json({ error: 'Current and new password are required.' }, { status: 400 });
     }
-    if (newPassword.length < 8) {
-      return NextResponse.json({ error: 'New password must be at least 8 characters.' }, { status: 400 });
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
     await connectDB();

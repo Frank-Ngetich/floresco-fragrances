@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { User } from '@/models';
 import bcrypt from 'bcryptjs';
+import { validatePassword } from '@/lib/password';
 
 export const runtime = 'nodejs';
 
@@ -16,11 +17,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: 'Password must be at least 8 characters.' },
-        { status: 400 }
-      );
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
     const normalised = email.trim().toLowerCase();

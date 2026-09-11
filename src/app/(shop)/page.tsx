@@ -60,10 +60,11 @@ async function getFeaturedProducts(): Promise<IProduct[]> {
 }
 
 export default async function HomePage() {
-  const [categoryImages, featuredProducts] = await Promise.all([
-    getCategoryImages(),
-    getFeaturedProducts(),
-  ]);
+  // Sequential, not Promise.all: both helpers call connectDB() independently,
+  // and on Cloudflare Workers two concurrent mongoose.connect() attempts on
+  // a cold connection race each other and can leave the connection wedged.
+  const categoryImages   = await getCategoryImages();
+  const featuredProducts = await getFeaturedProducts();
   return (
     <>
       <Hero />

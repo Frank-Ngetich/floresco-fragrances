@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { connectDB } from '@/lib/db';
 import { User } from '@/models';
+import { validatePassword } from '@/lib/password';
 
 export const runtime = 'nodejs';
 
@@ -12,8 +13,9 @@ export async function POST(req: NextRequest) {
     if (!email?.trim() || !token?.trim() || !password) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
     }
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 });
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
     await connectDB();

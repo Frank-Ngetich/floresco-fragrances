@@ -4,8 +4,9 @@ import { signIn, signOut, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { Package, Heart, MapPin, User, LogOut, Check, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Package, Heart, MapPin, User, LogOut, Check, Eye, EyeOff, AlertCircle, X } from 'lucide-react';
 import { formatKES } from '@/lib/utils';
+import { passwordChecklist, isPasswordStrong } from '@/lib/password';
 
 const T = { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const };
 
@@ -23,7 +24,7 @@ function AuthPanel() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent,  setForgotSent]  = useState(false);
   const [form, setForm] = useState({
-    firstName: '', lastName: '', email: '', phone: '', password: '',
+    firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '',
   });
   const up = (k: string, v: string) => { setForm(p => ({ ...p, [k]: v })); setError(''); };
 
@@ -50,7 +51,12 @@ function AuthPanel() {
     if (!form.firstName || !form.email || !form.password) {
       setError('Name, email and password are required.'); return;
     }
-    if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    if (!isPasswordStrong(form.password)) {
+      setError('Please choose a stronger password — see the requirements below.'); return;
+    }
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match.'); return;
+    }
     setLoading(true); setError('');
     try {
       const res = await fetch('/api/auth/register', {
@@ -221,7 +227,7 @@ function AuthPanel() {
                 <input value={form.phone} onChange={e => up('phone', e.target.value)}
                   className="input-luxury" placeholder="+254 7XX XXX XXX" />
               </Field>
-              <Field label="Password * (min 8 characters)">
+              <Field label="Password *">
                 <div className="relative">
                   <input type={showPw ? 'text' : 'password'} required autoComplete="new-password"
                     value={form.password} onChange={e => up('password', e.target.value)}
@@ -231,6 +237,23 @@ function AuthPanel() {
                     {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
+                {form.password && (
+                  <ul className="mt-2.5 space-y-1">
+                    {passwordChecklist(form.password).map(r => (
+                      <li key={r.key} className={`flex items-center gap-1.5 text-[0.72rem] transition-colors ${r.met ? 'text-green-700' : 'text-stone/40'}`}>
+                        {r.met ? <Check size={11} /> : <X size={11} />} {r.label}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Field>
+              <Field label="Confirm Password *">
+                <input type={showPw ? 'text' : 'password'} required autoComplete="new-password"
+                  value={form.confirmPassword} onChange={e => up('confirmPassword', e.target.value)}
+                  className="input-luxury" placeholder="••••••••" />
+                {form.confirmPassword && form.confirmPassword !== form.password && (
+                  <p className="mt-1.5 text-[0.72rem] text-red-600">Passwords do not match.</p>
+                )}
               </Field>
               <button type="submit" disabled={loading}
                 className="btn-primary w-full justify-center mt-2 disabled:opacity-60">
@@ -280,7 +303,7 @@ function Dashboard({ session }: { session: { user: { name?: string | null; email
   async function changePassword(e: React.FormEvent) {
     e.preventDefault();
     setPwError(''); setPwSaved(false);
-    if (pwForm.next.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
+    if (!isPasswordStrong(pwForm.next)) { setPwError('Please choose a stronger password — see the requirements below.'); return; }
     if (pwForm.next !== pwForm.confirm) { setPwError('Passwords do not match.'); return; }
     setPwSaving(true);
     try {
@@ -452,13 +475,25 @@ function Dashboard({ session }: { session: { user: { name?: string | null; email
                     <input type="password" required value={pwForm.current}
                       onChange={e => setPwForm(p => ({ ...p, current: e.target.value }))} className="input-luxury" />
                   </Field>
-                  <Field label="New Password (min 8 characters)">
+                  <Field label="New Password">
                     <input type="password" required value={pwForm.next}
                       onChange={e => setPwForm(p => ({ ...p, next: e.target.value }))} className="input-luxury" />
+                    {pwForm.next && (
+                      <ul className="mt-2.5 space-y-1">
+                        {passwordChecklist(pwForm.next).map(r => (
+                          <li key={r.key} className={`flex items-center gap-1.5 text-[0.72rem] transition-colors ${r.met ? 'text-green-700' : 'text-stone/40'}`}>
+                            {r.met ? <Check size={11} /> : <X size={11} />} {r.label}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </Field>
                   <Field label="Confirm New Password">
                     <input type="password" required value={pwForm.confirm}
                       onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))} className="input-luxury" />
+                    {pwForm.confirm && pwForm.confirm !== pwForm.next && (
+                      <p className="mt-1.5 text-[0.72rem] text-red-600">Passwords do not match.</p>
+                    )}
                   </Field>
                   {pwError && (
                     <div className="flex items-start gap-2 text-red-700 bg-red-50 border border-red-200 text-sm px-4 py-3">

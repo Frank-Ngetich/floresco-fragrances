@@ -2,7 +2,8 @@
 import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Check, AlertCircle, X } from 'lucide-react';
+import { passwordChecklist, isPasswordStrong } from '@/lib/password';
 
 export default function ResetPasswordPage() {
   return (
@@ -28,7 +29,7 @@ function ResetPasswordForm() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-    if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    if (!isPasswordStrong(password)) { setError('Please choose a stronger password — see the requirements below.'); return; }
     if (password !== confirm) { setError('Passwords do not match.'); return; }
 
     setSaving(true);
@@ -84,11 +85,23 @@ function ResetPasswordForm() {
                   {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
+              {password && (
+                <ul className="mt-2.5 space-y-1">
+                  {passwordChecklist(password).map(r => (
+                    <li key={r.key} className={`flex items-center gap-1.5 text-[0.72rem] transition-colors ${r.met ? 'text-green-700' : 'text-stone/40'}`}>
+                      {r.met ? <Check size={11} /> : <X size={11} />} {r.label}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div>
               <label className="block text-[0.62rem] tracking-[0.18em] uppercase text-stone/40 mb-2 font-medium">Confirm New Password *</label>
               <input type={showPw ? 'text' : 'password'} required value={confirm} onChange={e => setConfirm(e.target.value)}
                 className="input-luxury" placeholder="••••••••" />
+              {confirm && confirm !== password && (
+                <p className="mt-1.5 text-[0.72rem] text-red-600">Passwords do not match.</p>
+              )}
             </div>
             {error && (
               <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
