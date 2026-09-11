@@ -1,9 +1,14 @@
 'use client';
 import { useState, useRef } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { MapPin, Clock, Phone, Mail, Plus, Minus, Send, CheckCircle, AlertCircle } from 'lucide-react';
 
 const T = { ease: [0.16, 1, 0.3, 1] as const };
+
+// TEMPORARY — free-license Unsplash placeholder (photo by T. Barrow)
+// standing in for a real photo of the Floresco shop on the Visit header.
+const VISIT_HERO_BG = 'https://images.unsplash.com/photo-1765009433753-c7462637d21f?w=1920&q=80&fm=jpg&fit=crop';
 
 const FAQS: { q: string; a: string; id?: string }[] = [
   { q: 'Are all your fragrances 100% authentic?', a: 'Yes, unequivocally. Every bottle is sourced through authorised distributors and comes with its original packaging, batch code, and quality seal. We stake our reputation on it.' },
@@ -71,11 +76,14 @@ export function ContactClient() {
   return (
     <div className="page-enter">
       {/* Header */}
-      <section ref={heroRef} className="bg-stone/[0.025] border-b border-stone/8 py-20 text-center">
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={heroIn ? { opacity: 1, y: 0 } : {}} transition={{ ...T, duration: 0.8 }}>
-          <div className="eyebrow mb-4">Get in Touch</div>
-          <h1 className="font-display text-[clamp(2.5rem,5vw,4.5rem)] mb-4">Visit &amp; Contact</h1>
-          <p className="text-stone/45 max-w-sm mx-auto text-sm">Come smell before you buy, or reach us online.</p>
+      <section ref={heroRef} className="relative py-24 text-center overflow-hidden">
+        <Image src={VISIT_HERO_BG} alt="" fill priority sizes="100vw" className="object-cover" />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(8,7,6,0.55) 0%, rgba(8,7,6,0.8) 100%)' }} />
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={heroIn ? { opacity: 1, y: 0 } : {}} transition={{ ...T, duration: 0.8 }}
+          className="relative">
+          <div className="eyebrow mb-4" style={{ color: 'rgb(201,164,85)' }}>Get in Touch</div>
+          <h1 className="font-display text-[clamp(2.5rem,5vw,4.5rem)] mb-4 text-white">Visit &amp; Contact</h1>
+          <p className="text-white/70 max-w-sm mx-auto text-sm">Come smell before you buy, or reach us online.</p>
         </motion.div>
       </section>
 

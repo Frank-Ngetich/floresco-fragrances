@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Package, ShoppingBag, MessageSquare,
-  Settings, LogOut, Store, Menu, X, Image,
+  Settings, LogOut, Store, Menu, X, Image, FileText,
   ChevronDown, Bell, Search, ShieldAlert
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -13,15 +13,16 @@ import { canAccessSection, type AdminSection } from '@/lib/permissions';
 import type { UserRole } from '@/types';
 
 const NAV: { href: string; icon: any; label: string; group: string; section: AdminSection }[] = [
-  { href: '/admin',            icon: LayoutDashboard, label: 'Dashboard',    group: 'Main',  section: 'dashboard' },
-  { href: '/admin/products',   icon: Package,         label: 'Products',     group: 'Store', section: 'products' },
-  { href: '/admin/orders',     icon: ShoppingBag,     label: 'Orders',       group: 'Store', section: 'orders' },
-  { href: '/admin/inquiries',  icon: MessageSquare,   label: 'Inquiries',    group: 'Store', section: 'inquiries' },
-  { href: '/admin/media',      icon: Image,           label: 'Media Library',group: 'Store', section: 'media' },
-  { href: '/admin/settings',   icon: Settings,        label: 'Settings',     group: 'System',section: 'settings' },
+  { href: '/admin',            icon: LayoutDashboard, label: 'Dashboard',    group: 'Main',    section: 'dashboard' },
+  { href: '/admin/products',   icon: Package,         label: 'Products',     group: 'Store',   section: 'products' },
+  { href: '/admin/orders',     icon: ShoppingBag,     label: 'Orders',       group: 'Store',   section: 'orders' },
+  { href: '/admin/inquiries',  icon: MessageSquare,   label: 'Inquiries',    group: 'Store',   section: 'inquiries' },
+  { href: '/admin/media',      icon: Image,           label: 'Media Library',group: 'Content', section: 'media' },
+  { href: '/admin/blog',       icon: FileText,        label: 'Blog / Journal',group: 'Content',section: 'blog' },
+  { href: '/admin/settings',   icon: Settings,        label: 'Settings',     group: 'System',  section: 'settings' },
 ];
 
-const GROUPS = ['Main','Store','System'];
+const GROUPS = ['Main','Store','Content','System'];
 
 interface Props {
   children: React.ReactNode;

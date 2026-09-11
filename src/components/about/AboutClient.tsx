@@ -1,8 +1,13 @@
 'use client';
 import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Shield, Star, Heart, Truck } from 'lucide-react';
+
+// TEMPORARY — free-license Unsplash placeholder (photo by Miftah Dudung)
+// standing in for real brand photography on the Story hero.
+const STORY_HERO_BG = 'https://images.unsplash.com/photo-1684039568465-24c31d0cc80f?w=1920&q=80&fm=jpg&fit=crop';
 
 const T = { ease: [0.16, 1, 0.3, 1] as const };
 
@@ -40,21 +45,17 @@ export function AboutClient() {
     <div className="page-enter">
       {/* Hero */}
       <section ref={heroRef}
-        className="relative min-h-[65vh] flex items-center justify-center text-center overflow-hidden"
-        style={{ background: 'linear-gradient(160deg,#FDFBF8 0%,#F5EDE8 50%,#EDE3DB 100%)' }}>
-        <div className="absolute inset-0 bg-noise opacity-40 pointer-events-none" />
-        <motion.div animate={{ rotate: 360 }} transition={{ duration: 120, repeat: Infinity, ease: 'linear' }}
-          className="absolute w-[600px] h-[600px] rounded-full border border-wine-200/20 pointer-events-none" />
-        <motion.div animate={{ rotate: -360 }} transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
-          className="absolute w-[400px] h-[400px] rounded-full border border-gold/15 pointer-events-none" />
+        className="relative min-h-[65vh] flex items-center justify-center text-center overflow-hidden">
+        <Image src={STORY_HERO_BG} alt="" fill priority sizes="100vw" className="object-cover" />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(8,7,6,0.55) 0%, rgba(8,7,6,0.78) 100%)' }} />
         <motion.div initial={{ opacity: 0, y: 28 }} animate={heroIn ? { opacity: 1, y: 0 } : {}}
           transition={{ ...T, duration: 0.9, delay: 0.2 }}
           className="relative px-6 max-w-3xl mx-auto py-32">
-          <div className="eyebrow mb-8">Our Story</div>
-          <h1 className="font-display text-[clamp(3rem,7vw,6.5rem)] leading-[1.02] mb-8">
-            To begin <em className="italic font-light" style={{ color: 'rgb(176,40,55)' }}>to bloom.</em>
+          <div className="eyebrow mb-8" style={{ color: 'rgb(201,164,85)' }}>Our Story</div>
+          <h1 className="font-display text-[clamp(3rem,7vw,6.5rem)] leading-[1.02] mb-8 text-white">
+            To begin <em className="italic font-light" style={{ color: 'rgb(201,164,85)' }}>to bloom.</em>
           </h1>
-          <p className="font-serif text-[clamp(1.1rem,2vw,1.4rem)] leading-relaxed text-stone/60 italic max-w-xl mx-auto">
+          <p className="font-serif text-[clamp(1.1rem,2vw,1.4rem)] leading-relaxed text-white/70 italic max-w-xl mx-auto">
             Floresco began with a simple belief: that Eldoret deserved a world-class fragrance house of its own.
           </p>
         </motion.div>

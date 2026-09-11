@@ -1,7 +1,7 @@
 import type { UserRole } from '@/types';
 
 export type AdminSection =
-  | 'dashboard' | 'orders' | 'products' | 'inquiries' | 'media' | 'settings';
+  | 'dashboard' | 'orders' | 'products' | 'inquiries' | 'media' | 'blog' | 'settings';
 
 /** Which roles can access each admin section at all (page-level gate). */
 const SECTION_ACCESS: Record<AdminSection, UserRole[]> = {
@@ -10,6 +10,7 @@ const SECTION_ACCESS: Record<AdminSection, UserRole[]> = {
   products:  ['staff', 'manager', 'owner'],
   inquiries: ['staff', 'manager', 'owner'],
   media:     ['manager', 'owner'],
+  blog:      ['manager', 'owner'],
   settings:  ['owner'],
 };
 
@@ -19,6 +20,7 @@ const ROUTE_SECTIONS: [string, AdminSection][] = [
   ['/admin/products',  'products'],
   ['/admin/inquiries', 'inquiries'],
   ['/admin/media',     'media'],
+  ['/admin/blog',      'blog'],
   ['/admin/settings',  'settings'],
   ['/admin',           'dashboard'],
 ];
@@ -40,4 +42,5 @@ export function canDeleteProduct(role?: UserRole | null)  { return role === 'man
 export function canWriteMedia(role?: UserRole | null)     { return role === 'manager' || role === 'owner'; }
 export function canWriteSettings(role?: UserRole | null)  { return role === 'owner'; }
 export function canReplyInquiry(role?: UserRole | null)   { return role === 'staff' || role === 'manager' || role === 'owner'; }
+export function canWriteBlog(role?: UserRole | null)      { return role === 'manager' || role === 'owner'; }
 export function canManageTeam(role?: UserRole | null)      { return role === 'owner'; }

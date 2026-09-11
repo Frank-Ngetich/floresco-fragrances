@@ -3,10 +3,10 @@ import {
   motion, useScroll, useTransform, useMotionValue,
   useSpring, useReducedMotion,
 } from 'framer-motion';
-import { useRef, useEffect, useState } from 'react';
+import { useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, MapPin, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { DEFAULT_HERO, type HeroData } from '@/lib/hero-defaults';
 
 /* ─── Animation variants ─────────────────────────────── */
@@ -20,31 +20,6 @@ const RISE = {
     transition: { duration: 1.1, ease: [0.16, 1, 0.3, 1] } },
 };
 
-/* ─── Floating particles (fixed decorative field) ────── */
-const PARTICLES = [
-  { size: 4,  left: '8%',  top: '18%', dur: 8,   delay: 0,   wine: true  },
-  { size: 3,  left: '88%', top: '22%', dur: 10,  delay: 1.5, wine: false },
-  { size: 6,  left: '78%', top: '72%', dur: 12,  delay: 0.8, wine: true  },
-  { size: 3,  left: '15%', top: '70%', dur: 9,   delay: 2.2, wine: false },
-  { size: 5,  left: '92%', top: '48%', dur: 11,  delay: 0.4, wine: true  },
-  { size: 4,  left: '5%',  top: '42%', dur: 13,  delay: 3.1, wine: false },
-  { size: 3,  left: '50%', top: '8%',  dur: 7.5, delay: 1.8, wine: true  },
-  { size: 5,  left: '38%', top: '88%', dur: 9.5, delay: 4.0, wine: false },
-  { size: 2,  left: '65%', top: '15%', dur: 6,   delay: 2.6, wine: true  },
-  { size: 4,  left: '22%', top: '92%', dur: 11,  delay: 1.2, wine: false },
-];
-
-/* Spread N scent pills evenly around the bottle stage */
-function pillLayout(i: number, total: number) {
-  const angle = (i / Math.max(total, 1)) * Math.PI * 2 - Math.PI / 2;
-  return {
-    x: Math.round(Math.cos(angle) * 185),
-    y: Math.round(Math.sin(angle) * 130),
-    delay: 1.1 + i * 0.2,
-    dur: 6 + (i % 4) * 0.6,
-  };
-}
-
 /* Normalise a YouTube watch/share URL into an embeddable one */
 function toEmbedUrl(url: string) {
   const watch = url.match(/[?&]v=([\w-]+)/);
@@ -57,10 +32,7 @@ function toEmbedUrl(url: string) {
 export function Hero({ hero }: { hero?: Partial<HeroData> }) {
   const data = { ...DEFAULT_HERO, ...hero };
   const containerRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
   const reduceMotion = useReducedMotion();
-  const showParticles = data.showParticles && !reduceMotion;
-  const showOrbitRings = data.showOrbitRings && !reduceMotion;
 
   /* Scroll parallax */
   const { scrollYProgress } = useScroll({
@@ -77,8 +49,6 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
   const rawY = useMotionValue(0);
   const springX = useSpring(rawX, { stiffness: 55, damping: 20 });
   const springY = useSpring(rawY, { stiffness: 55, damping: 20 });
-
-  useEffect(() => { setMounted(true); }, []);
 
   function onMouseMove(e: React.MouseEvent) {
     if (!containerRef.current) return;
@@ -98,81 +68,37 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
       onMouseLeave={onMouseLeave}
       className="relative min-h-[96vh] flex items-center overflow-hidden"
     >
-      {/* ── Background ───────────────────────────────── */}
+      {/* ── Full-bleed background photo ──────────────── */}
       <motion.div style={{ scale: bgScale, willChange: 'transform' }} className="absolute inset-0">
+        {data.heroBackgroundUrl ? (
+          <Image
+            src={data.heroBackgroundUrl}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0"
+            style={{ background: `linear-gradient(165deg, ${data.bgFrom} 0%, ${data.bgMid} 50%, ${data.bgTo} 100%)` }}
+          />
+        )}
+        {/* Scrim — dark on the left where text sits, easing off toward the
+            product card so the photo still reads through on the right */}
         <div className="absolute inset-0"
           style={{
-            background: `
-              radial-gradient(ellipse 80% 70% at 65% 40%, rgba(138,109,46,0.08) 0%, transparent 65%),
-              radial-gradient(ellipse 60% 60% at 20% 70%, rgba(23,20,15,0.04) 0%, transparent 60%),
-              linear-gradient(165deg, ${data.bgFrom} 0%, ${data.bgMid} 50%, ${data.bgTo} 100%)
-            `,
+            background: 'linear-gradient(100deg, rgba(8,7,6,0.92) 0%, rgba(8,7,6,0.72) 32%, rgba(8,7,6,0.38) 58%, rgba(8,7,6,0.12) 78%, transparent 100%)',
           }}
         />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 25%)' }} />
       </motion.div>
 
-      {/* Noise texture — kept outside the scaling layer so it paints once
-          instead of being re-rasterized on every scroll frame */}
-      <div className="absolute inset-0 opacity-[0.35] pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E")`,
-          backgroundSize: '128px',
-        }}
-      />
-
-      {/* ── Ambient orbs ─────────────────────────────── */}
-      {mounted && !reduceMotion && (
-        <>
-          <motion.div
-            animate={{ scale: [1, 1.25, 1], opacity: [0.2, 0.4, 0.2] }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute pointer-events-none rounded-full"
-            style={{
-              width: 700, height: 700, top: '-15%', right: '-5%',
-              background: 'radial-gradient(circle, rgba(138,109,46,0.08) 0%, transparent 70%)',
-            }}
-          />
-          <motion.div
-            animate={{ scale: [1, 1.18, 1], opacity: [0.15, 0.3, 0.15] }}
-            transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut', delay: 5 }}
-            className="absolute pointer-events-none rounded-full"
-            style={{
-              width: 500, height: 500, bottom: '-10%', left: '5%',
-              background: 'radial-gradient(circle, rgba(138,109,46,0.1) 0%, transparent 70%)',
-            }}
-          />
-        </>
-      )}
-
-      {/* ── Decorative letter ────────────────────────── */}
+      {/* ── Decorative letter — one quiet signature touch ── */}
       <div
         className="absolute right-[-2rem] top-[-3rem] font-display leading-none select-none pointer-events-none hidden lg:block"
-        style={{ fontSize: 'clamp(16rem, 24vw, 38rem)', color: 'rgba(23,20,15,0.028)' }}
+        style={{ fontSize: 'clamp(16rem, 24vw, 38rem)', color: 'rgba(255,255,255,0.05)' }}
       >F</div>
-
-      {/* ── Floating particles ───────────────────────── */}
-      {mounted && showParticles && PARTICLES.map((p, i) => (
-        <motion.div key={i}
-          className="absolute rounded-full pointer-events-none"
-          style={{
-            width: p.size, height: p.size,
-            left: p.left, top: p.top,
-            background: p.wine
-              ? 'rgba(138,109,46,0.4)'
-              : 'rgba(173,134,64,0.4)',
-          }}
-          animate={{
-            y: [0, -20, 10, 0],
-            x: [0,  8,  -5, 0],
-            opacity: [0.3, 0.8, 0.2, 0.3],
-            scale:   [1, 1.4, 0.7, 1],
-          }}
-          transition={{
-            duration: p.dur, delay: p.delay,
-            repeat: Infinity, ease: 'easeInOut',
-          }}
-        />
-      ))}
 
       {/* ── Main grid ────────────────────────────────── */}
       <div className="relative max-w-[1400px] mx-auto px-6 lg:px-12 w-full
@@ -187,8 +113,8 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
         >
           {/* Live badge */}
           <motion.div variants={RISE} className="mb-8">
-            <div className="inline-flex items-center gap-2.5 bg-white/75 backdrop-blur-md
-                            border border-stone/10 shadow-sm pl-3 pr-4 py-2">
+            <div className="inline-flex items-center gap-2.5 bg-white/90 backdrop-blur-md
+                            shadow-sm pl-3 pr-4 py-2">
               <span className="relative flex h-2 w-2 flex-shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-wine-500 opacity-60" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-wine-600" />
@@ -201,13 +127,13 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
 
           {/* Headline */}
           <motion.h1 variants={RISE}
-            className="font-display leading-[0.97] tracking-[-0.03em] mb-8"
+            className="font-display leading-[0.97] tracking-[-0.03em] mb-8 text-white"
             style={{ fontSize: 'clamp(3.2rem, 8vw, 7.2rem)' }}>
             {data.heading1}
             <br />
             <span className="relative inline-block">
               <em className="italic font-light not-italic"
-                style={{ color: 'rgb(138,109,46)' }}>
+                style={{ color: 'rgb(201,164,85)' }}>
                 {data.heading2}
               </em>
               {/* Underline shimmer */}
@@ -217,7 +143,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
                 transition={{ delay: 1.4, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                 className="absolute -bottom-2 left-0 right-0 h-px"
                 style={{
-                  background: 'linear-gradient(90deg, rgba(138,109,46,0.7), rgba(138,109,46,0.6), transparent)',
+                  background: 'linear-gradient(90deg, rgba(201,164,85,0.8), rgba(201,164,85,0.6), transparent)',
                 }}
               />
             </span>
@@ -225,27 +151,22 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
 
           {/* Body */}
           <motion.p variants={RISE}
-            className="font-serif text-[clamp(1rem,1.6vw,1.25rem)] text-stone/60
-                       leading-[1.75] italic font-light mb-3 max-w-[30rem]">
+            className="font-serif text-[clamp(1rem,1.6vw,1.25rem)] text-white/75
+                       leading-[1.75] italic font-light mb-12 max-w-[30rem]">
             {data.subtext}
           </motion.p>
 
-          <motion.div variants={RISE}
-            className="flex items-center gap-1.5 mb-10 text-[0.75rem] text-stone/40">
-            <MapPin size={11} className="text-wine-500 flex-shrink-0" />
-            {data.tagline}
-          </motion.div>
-
           {/* CTAs */}
-          <motion.div variants={RISE} className="flex flex-wrap items-center gap-4 mb-14">
+          <motion.div variants={RISE} className="flex flex-wrap items-center gap-4">
             <Link href={data.cta1Link}
-              className="group relative overflow-hidden btn-primary
-                         shadow-[0_8px_32px_rgba(138,109,46,0.3)]
-                         hover:shadow-[0_12px_40px_rgba(138,109,46,0.42)]
-                         transition-shadow duration-300">
-              {/* Fill sweep — black button reveals a gold fill on hover */}
+              className="group relative overflow-hidden inline-flex items-center justify-center gap-2
+                         bg-[#C9A455] text-[#17140F] text-[0.7rem] tracking-[0.22em] uppercase font-medium
+                         px-8 py-4 transition-all duration-300
+                         shadow-[0_8px_32px_rgba(0,0,0,0.4)]
+                         hover:shadow-[0_12px_40px_rgba(0,0,0,0.5)]">
+              {/* Fill sweep — gold button reveals white on hover */}
               <motion.span
-                className="absolute inset-0 bg-wine-500 origin-left pointer-events-none"
+                className="absolute inset-0 bg-white origin-left pointer-events-none"
                 initial={{ scaleX: 0 }}
                 whileHover={{ scaleX: 1 }}
                 transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
@@ -259,24 +180,12 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
 
             <Link href={data.cta2Link}
               className="group relative flex items-center gap-2 text-[0.72rem]
-                         tracking-[0.2em] uppercase font-medium text-stone/60
-                         hover:text-stone transition-colors duration-200">
-              <span className="w-8 h-px bg-stone/30 group-hover:w-12 group-hover:bg-stone/60 transition-all duration-300" />
+                         tracking-[0.2em] uppercase font-medium text-white/70
+                         hover:text-white transition-colors duration-200">
+              <span className="w-8 h-px bg-white/40 group-hover:w-12 group-hover:bg-white/80 transition-all duration-300" />
               {data.cta2Label}
             </Link>
           </motion.div>
-
-          {/* Trust row */}
-          <motion.div variants={RISE}
-            className="flex flex-wrap gap-x-8 gap-y-4 pt-8 border-t border-stone/10">
-            {data.trustItems.map(t => (
-              <div key={t.label}>
-                <div className="text-[0.68rem] tracking-[0.2em] uppercase font-semibold text-stone mb-0.5">{t.label}</div>
-                <div className="text-[0.72rem] text-stone/45">{t.sub}</div>
-              </div>
-            ))}
-          </motion.div>
-
         </motion.div>
 
         {/* ── RIGHT: Bottle stage ───────────────────── */}
@@ -285,49 +194,7 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
           className="relative flex items-center justify-center
                      h-[480px] lg:h-[680px] w-full"
         >
-          {/* Orbit rings */}
-          {showOrbitRings && [
-            { size: 280, dur: 75,  op: 0.28, rev: false },
-            { size: 400, dur: 110, op: 0.16, rev: true  },
-            { size: 520, dur: 150, op: 0.10, rev: false },
-            { size: 640, dur: 200, op: 0.06, rev: true  },
-          ].map((ring, i) => (
-            <motion.div key={i}
-              animate={{ rotate: ring.rev ? -360 : 360 }}
-              transition={{ duration: ring.dur, repeat: Infinity, ease: 'linear' }}
-              className="absolute rounded-full pointer-events-none"
-              style={{
-                width: ring.size, height: ring.size,
-                border: `1px dashed rgba(138,109,46,${ring.op})`,
-              }}
-            />
-          ))}
-
-          {/* Orbiting dots */}
-          {showOrbitRings && (
-            <>
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 75, repeat: Infinity, ease: 'linear' }}
-                className="absolute pointer-events-none"
-                style={{ width: 280, height: 280 }}>
-                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2
-                                w-3 h-3 rounded-full bg-wine-500/70
-                                shadow-[0_0_10px_rgba(138,109,46,0.6)]" />
-              </motion.div>
-              <motion.div
-                animate={{ rotate: -360 }}
-                transition={{ duration: 110, repeat: Infinity, ease: 'linear' }}
-                className="absolute pointer-events-none"
-                style={{ width: 400, height: 400 }}>
-                <div className="absolute top-0 right-1/4
-                                w-2 h-2 rounded-full bg-stone/40
-                                shadow-[0_0_8px_rgba(23,20,15,0.35)]" />
-              </motion.div>
-            </>
-          )}
-
-          {/* Glow pool under bottle */}
+          {/* Glow pool under bottle — grounds the product, doesn't compete for attention */}
           <motion.div
             animate={reduceMotion ? undefined : { scale: [1, 1.35, 1], opacity: [0.25, 0.55, 0.25] }}
             transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
@@ -378,14 +245,14 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
               <motion.div
                 animate={reduceMotion ? undefined : { y: [-10, 10, -10] }}
                 transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
-                className="relative w-[260px] h-[340px] lg:w-[340px] lg:h-[440px] rounded-2xl overflow-hidden shadow-[0_30px_70px_rgba(23,20,15,0.22)] border border-white/60"
+                className="relative w-[280px] h-[380px] lg:w-[400px] lg:h-[520px] rounded-2xl overflow-hidden shadow-[0_40px_90px_rgba(0,0,0,0.55)] ring-1 ring-white/10 border-4 border-white"
               >
                 <Image
                   src={data.heroImageUrl}
                   alt="Floresco"
                   fill
                   priority
-                  sizes="(max-width: 1024px) 260px, 340px"
+                  sizes="(max-width: 1024px) 280px, 400px"
                   className="object-cover"
                 />
               </motion.div>
@@ -398,69 +265,6 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
               </motion.div>
             )}
           </motion.div>
-
-          {/* ── Scent pills ── */}
-          {mounted && data.pills.map((label, i) => {
-            const pos = pillLayout(i, data.pills.length);
-            return (
-              <motion.div key={label + i}
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: pos.delay, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                style={{ x: pos.x, y: pos.y }}
-                className="absolute z-20 pointer-events-none"
-              >
-                <motion.div
-                  animate={{ y: [0, -7, 0] }}
-                  transition={{ duration: pos.dur, repeat: Infinity, ease: 'easeInOut',
-                                delay: Math.random() * 2 }}
-                  className="bg-white/90 backdrop-blur-md border border-stone/10
-                             shadow-[0_4px_20px_rgba(0,0,0,0.06)]
-                             px-4 py-2 flex items-center gap-2.5"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-wine-500/80 flex-shrink-0" />
-                  <span className="text-[0.6rem] tracking-[0.28em] uppercase font-medium text-stone/65 whitespace-nowrap">
-                    {label}
-                  </span>
-                </motion.div>
-              </motion.div>
-            );
-          })}
-
-          {/* ── Floating badges ── */}
-          {/* Delivery */}
-          <motion.div
-            initial={{ opacity: 0, x: -30, y: -10 }}
-            animate={{ opacity: 1, x: 0,   y: 0 }}
-            transition={{ delay: 2.5, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute top-[16%] left-0 lg:left-[-1rem] z-20
-                       bg-stone/95 backdrop-blur-md text-white
-                       shadow-[0_8px_32px_rgba(0,0,0,0.18)] px-5 py-3.5"
-          >
-            <div className="text-[0.62rem] tracking-[0.22em] uppercase text-wine-300 mb-1">Eldoret</div>
-            <div className="text-[0.82rem] font-medium">Same-Day Delivery</div>
-            <div className="text-[0.62rem] text-white/40 mt-0.5">Order before 3 PM</div>
-          </motion.div>
-
-          {/* Authenticity badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 2.8, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute top-[8%] right-[5%] z-20
-                       bg-white/90 backdrop-blur-sm border border-stone/10
-                       shadow-[0_4px_16px_rgba(0,0,0,0.07)] px-3.5 py-2.5
-                       flex items-center gap-2.5"
-          >
-            <div className="w-7 h-7 rounded-full bg-wine-50 border border-wine-200
-                            flex items-center justify-center flex-shrink-0">
-              <Sparkles size={12} className="text-wine-600" />
-            </div>
-            <div>
-              <div className="text-[0.65rem] font-semibold text-stone">100% Original</div>
-              <div className="text-[0.58rem] text-stone/40">Authenticated</div>
-            </div>
-          </motion.div>
         </motion.div>
       </div>
 
@@ -472,14 +276,14 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
         className="absolute bottom-8 left-1/2 -translate-x-1/2
                    flex flex-col items-center gap-3"
       >
-        <span className="text-[0.55rem] tracking-[0.42em] uppercase text-stone/30">Discover</span>
+        <span className="text-[0.55rem] tracking-[0.42em] uppercase text-white/50">Discover</span>
         <div className="relative h-14 w-px overflow-hidden">
           <motion.div
             animate={reduceMotion ? undefined : { y: ['-100%', '100%'] }}
             transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
             className="absolute inset-x-0 top-0 h-full"
             style={{
-              background: 'linear-gradient(to bottom, transparent, rgba(138,109,46,0.7), transparent)',
+              background: 'linear-gradient(to bottom, transparent, rgba(201,164,85,0.85), transparent)',
             }}
           />
         </div>
