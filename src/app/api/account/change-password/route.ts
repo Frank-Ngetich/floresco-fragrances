@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/db';
 import { User } from '@/models';
 import { auth } from '@/lib/auth';
 import { validatePassword } from '@/lib/password';
+import { notifyPasswordChanged } from '@/lib/notifications';
 
 export const runtime = 'nodejs';
 
@@ -39,6 +40,8 @@ export async function POST(req: NextRequest) {
       { _id: user._id },
       { $set: { password: passwordHash, mustChangePassword: false } }
     );
+
+    notifyPasswordChanged(user.email, user.name).catch(console.error);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

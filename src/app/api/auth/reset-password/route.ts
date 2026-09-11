@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { connectDB } from '@/lib/db';
 import { User } from '@/models';
 import { validatePassword } from '@/lib/password';
+import { notifyPasswordChanged } from '@/lib/notifications';
 
 export const runtime = 'nodejs';
 
@@ -40,6 +41,8 @@ export async function POST(req: NextRequest) {
         $unset: { resetToken: '', resetTokenExpiry: '' },
       }
     );
+
+    notifyPasswordChanged(user.email, user.name).catch(console.error);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db';
 import { User } from '@/models';
 import bcrypt from 'bcryptjs';
 import { validatePassword } from '@/lib/password';
+import { notifyWelcome } from '@/lib/notifications';
 
 export const runtime = 'nodejs';
 
@@ -53,6 +54,8 @@ export async function POST(req: NextRequest) {
         password: passwordHash,
       });
     }
+
+    notifyWelcome(customer.email, customer.name).catch(console.error);
 
     return NextResponse.json(
       { _id: customer._id, name: customer.name, email: customer.email },

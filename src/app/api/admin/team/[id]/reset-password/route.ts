@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/db';
 import { User } from '@/models';
 import { auth } from '@/lib/auth';
 import { canManageTeam } from '@/lib/permissions';
+import { notifyTeamInvite } from '@/lib/notifications';
 import type { UserRole } from '@/types';
 
 export const runtime = 'nodejs';
@@ -33,6 +34,8 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     target.password = await bcrypt.hash(tempPassword, 12);
     target.mustChangePassword = true;
     await target.save();
+
+    notifyTeamInvite(target.email, target.name, tempPassword, target.role).catch(console.error);
 
     return NextResponse.json({ tempPassword });
   } catch {

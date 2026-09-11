@@ -5,6 +5,7 @@ import { connectDB } from '@/lib/db';
 import { User } from '@/models';
 import { auth } from '@/lib/auth';
 import { canManageTeam } from '@/lib/permissions';
+import { notifyTeamInvite } from '@/lib/notifications';
 import type { UserRole } from '@/types';
 
 export const runtime = 'nodejs';
@@ -71,6 +72,8 @@ export async function POST(req: NextRequest) {
     } else {
       member = await User.create({ name: name.trim(), email: normalised, role: newRole, password: passwordHash, mustChangePassword: true });
     }
+
+    notifyTeamInvite(member.email, member.name, tempPassword, member.role).catch(console.error);
 
     return NextResponse.json({
       user: { _id: member._id, name: member.name, email: member.email, role: member.role },

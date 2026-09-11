@@ -61,31 +61,32 @@ function emailWrapper(content: string): string {
 <style>
   body { margin:0; padding:0; font-family: Georgia, serif; background:#F5F1EA; }
   .wrap { max-width:600px; margin:0 auto; background:#fff; }
-  .header { background:#722F37; padding:40px 40px 32px; text-align:center; }
+  .header { background:#17140F; padding:40px 40px 32px; text-align:center; }
   .header h1 { margin:0; color:#fff; font-size:28px; letter-spacing:8px; font-weight:400; }
-  .header p { margin:8px 0 0; color:rgba(255,255,255,0.75); font-size:12px; letter-spacing:3px; text-transform:uppercase; font-family:'Helvetica Neue',sans-serif; }
+  .header h1 .accent { color:#C9A455; }
+  .header p { margin:8px 0 0; color:rgba(255,255,255,0.65); font-size:12px; letter-spacing:3px; text-transform:uppercase; font-family:'Helvetica Neue',sans-serif; }
   .body { padding:40px; }
   .body h2 { font-size:22px; color:#0F0E0D; margin:0 0 16px; font-weight:400; }
   .body p { color:#2A2723; line-height:1.7; margin:0 0 16px; font-size:15px; }
-  .body .highlight { background:#FBF4F5; border-left:3px solid #722F37; padding:16px 20px; margin:24px 0; font-family:'Helvetica Neue',sans-serif; }
+  .body .highlight { background:#FBF8F0; border-left:3px solid #8A6D2E; padding:16px 20px; margin:24px 0; font-family:'Helvetica Neue',sans-serif; }
   .order-table { width:100%; border-collapse:collapse; margin:24px 0; font-family:'Helvetica Neue',sans-serif; font-size:13px; }
   .order-table th { text-align:left; padding:8px 0; color:#6B6660; letter-spacing:2px; text-transform:uppercase; font-size:11px; border-bottom:1px solid #EDE9E1; }
   .order-table td { padding:12px 0; border-bottom:1px solid #EDE9E1; color:#2A2723; }
   .total-row td { font-weight:600; font-size:15px; border-bottom:none; padding-top:16px; }
-  .btn { display:inline-block; background:#722F37; color:#fff; text-decoration:none; padding:14px 32px; font-family:'Helvetica Neue',sans-serif; font-size:11px; letter-spacing:3px; text-transform:uppercase; margin:24px 0; }
+  .btn { display:inline-block; background:#17140F; color:#fff; text-decoration:none; padding:14px 32px; font-family:'Helvetica Neue',sans-serif; font-size:11px; letter-spacing:3px; text-transform:uppercase; margin:24px 0; }
   .footer { background:#0F0E0D; padding:32px 40px; text-align:center; }
   .footer p { color:rgba(255,255,255,0.5); font-size:12px; font-family:'Helvetica Neue',sans-serif; margin:4px 0; line-height:1.6; }
 </style></head><body>
 <div class="wrap">
   <div class="header">
-    <h1>FLORESCO</h1>
+    <h1>FLORES<span class="accent">CO</span></h1>
     <p>Fragrances & Accessories</p>
   </div>
   <div class="body">${content}</div>
   <div class="footer">
     <p>Floresco Fragrances & Accessories</p>
     <p>Kapsoya Business Park, Eldoret, Kenya</p>
-    <p>hello@florescofragrances.co.ke · +254 7XX XXX XXX</p>
+    <p>${process.env.BUSINESS_EMAIL || 'hello@florescofragrances.co.ke'}</p>
   </div>
 </div>
 </body></html>`;
@@ -174,8 +175,76 @@ export async function notifyInquiryReceived(email: string, name: string) {
     <h2>Thank you for reaching out</h2>
     <p>Dear ${name},</p>
     <p>We've received your message and will be in touch within 24 hours.</p>
-    <p>For urgent enquiries, call or WhatsApp us on <strong>+254 7XX XXX XXX</strong>.</p>
     <p>Warmly,<br>The Floresco Team</p>
   `);
   await sendEmail(email, 'We received your message — Floresco', html);
+}
+
+export async function notifyWelcome(email: string, name: string) {
+  const firstName = name.split(' ')[0] || 'there';
+  const html = emailWrapper(`
+    <h2>Welcome to Floresco, ${firstName}.</h2>
+    <p>Your account is ready. From here you can track every order, save your details for faster checkout, and be the first to know when new fragrances arrive.</p>
+    <a href="${SITE}/shop" class="btn">Explore the Collection</a>
+    <p>If you ever have a question about a scent, a note, or an order — just reply to this email.</p>
+    <p>Warmly,<br>The Floresco Team</p>
+  `);
+  await sendEmail(email, 'Welcome to Floresco', html);
+}
+
+export async function notifyPasswordChanged(email: string, name: string) {
+  const html = emailWrapper(`
+    <h2>Your password was changed</h2>
+    <p>Hi ${name.split(' ')[0] || 'there'},</p>
+    <p>This confirms your Floresco account password was just changed. If this was you, no action is needed.</p>
+    <div class="highlight">If you didn't make this change, reply to this email immediately so we can help secure your account.</div>
+  `);
+  await sendEmail(email, 'Your Floresco password was changed', html);
+}
+
+export async function notifyTeamInvite(email: string, name: string, tempPassword: string, role: string) {
+  const html = emailWrapper(`
+    <h2>You've been added to the Floresco team</h2>
+    <p>Hi ${name.split(' ')[0] || 'there'},</p>
+    <p>An account has been created for you on the Floresco admin panel with the role of <strong>${role}</strong>.</p>
+    <div class="highlight">
+      Email: <strong>${email}</strong><br>
+      Temporary password: <strong>${tempPassword}</strong>
+    </div>
+    <p>You'll be asked to set a new password the first time you sign in.</p>
+    <a href="${SITE}/account" class="btn">Sign In</a>
+  `);
+  await sendEmail(email, 'Your Floresco admin account', html);
+}
+
+/* Alerts to the business inbox — kept plain-text-ish and terse since these
+   are for staff, not customers. */
+const ADMIN_EMAIL = process.env.BUSINESS_EMAIL || process.env.EMAIL_FROM || '';
+
+export async function notifyAdminNewOrder(order: IOrder) {
+  if (!ADMIN_EMAIL) return;
+  const html = emailWrapper(`
+    <h2>New order received</h2>
+    <div class="highlight">
+      <strong>${order.orderNumber}</strong> · ${formatKES(order.total)}<br>
+      ${order.customer.name} · ${order.customer.email} · ${order.customer.phone}
+    </div>
+    ${itemsTable(order)}
+    <a href="${SITE}/admin/orders" class="btn">View in Admin</a>
+  `);
+  await sendEmail(ADMIN_EMAIL, `New order ${order.orderNumber} — ${formatKES(order.total)}`, html);
+}
+
+export async function notifyAdminNewInquiry(name: string, email: string, subject: string, message: string) {
+  if (!ADMIN_EMAIL) return;
+  const html = emailWrapper(`
+    <h2>New customer inquiry</h2>
+    <div class="highlight">
+      <strong>${name}</strong> · ${email}<br>
+      Subject: ${subject}
+    </div>
+    <p>${message}</p>
+    <a href="${SITE}/admin/inquiries" class="btn">Reply in Admin</a>
+  `);
+  await sendEmail(ADMIN_EMAIL, `New inquiry: ${subject}`, html);
 }

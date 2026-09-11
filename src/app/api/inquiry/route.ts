@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Inquiry } from '@/models';
-import { notifyInquiryReceived } from '@/lib/notifications';
+import { notifyInquiryReceived, notifyAdminNewInquiry } from '@/lib/notifications';
 import { z } from 'zod';
 
 export const runtime = 'nodejs';
@@ -22,7 +22,8 @@ export async function POST(req: NextRequest) {
     await connectDB();
     const inquiry = await Inquiry.create(data);
 
-    await notifyInquiryReceived(data.email, data.name).catch(console.error);
+    notifyInquiryReceived(data.email, data.name).catch(console.error);
+    notifyAdminNewInquiry(data.name, data.email, data.subject, data.message).catch(console.error);
 
     return NextResponse.json({ success: true, id: inquiry._id }, { status: 201 });
   } catch (err) {

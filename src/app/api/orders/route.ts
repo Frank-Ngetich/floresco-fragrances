@@ -4,6 +4,7 @@ import { Order, User } from '@/models';
 import { auth } from '@/lib/auth';
 import { canAccessSection } from '@/lib/permissions';
 import { calcDiscount } from '@/lib/coupons';
+import { notifyOrderConfirmation, notifyAdminNewOrder } from '@/lib/notifications';
 import type { UserRole } from '@/types';
 
 export const runtime = 'nodejs';
@@ -86,6 +87,11 @@ export async function POST(req: NextRequest) {
       status:   'pending',
       statusHistory: [{ status: 'pending', updatedAt: new Date() }],
     });
+
+    /* Fire-and-forget — don't make the customer wait on email delivery */
+    const orderObj = order.toObject();
+    notifyOrderConfirmation(orderObj).catch(console.error);
+    notifyAdminNewOrder(orderObj).catch(console.error);
 
     return NextResponse.json({ orderNumber, _id: order._id }, { status: 201 });
   } catch (err: any) {
