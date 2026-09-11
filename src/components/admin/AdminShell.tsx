@@ -68,6 +68,21 @@ export function AdminShell({ children, session }: Props) {
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
+  /* The site's <body> is white — on mobile, address-bar collapse and
+     rubber-band overscroll can momentarily reveal it beneath this dark
+     admin shell, which makes every white-on-dark label unreadable. Paint
+     the document itself dark for as long as the admin is mounted. */
+  useEffect(() => {
+    const prevBody = document.body.style.background;
+    const prevHtml = document.documentElement.style.background;
+    document.body.style.background = '#0D0C0B';
+    document.documentElement.style.background = '#0D0C0B';
+    return () => {
+      document.body.style.background = prevBody;
+      document.documentElement.style.background = prevHtml;
+    };
+  }, []);
+
   const user = session.user;
   const role = ((user as { role?: UserRole }).role || 'staff') as UserRole;
   const initials = (user.name || 'A').split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
@@ -172,7 +187,7 @@ export function AdminShell({ children, session }: Props) {
   );
 
   return (
-    <div className="flex min-h-screen bg-[#0D0C0B] text-white">
+    <div className="flex min-h-dvh bg-[#0D0C0B] text-white overscroll-y-contain">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-60 flex-shrink-0 bg-[#141210] border-r border-white/[0.07] fixed top-0 bottom-0 left-0 z-30">
         <SidebarContent />
@@ -199,7 +214,7 @@ export function AdminShell({ children, session }: Props) {
       </AnimatePresence>
 
       {/* Main area */}
-      <div className="flex-1 lg:ml-60 flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-60 flex flex-col min-h-dvh">
         {/* Top bar */}
         <header className="sticky top-0 z-20 bg-[#0D0C0B]/90 backdrop-blur-md border-b border-white/[0.07] px-4 lg:px-8 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">

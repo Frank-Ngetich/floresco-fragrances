@@ -339,27 +339,27 @@ export function ProductEditor({ productId }: { productId?: string }) {
                 </button>
               </div>
               {form.sizes.map((size, i) => (
-                <div key={i} className="grid grid-cols-[auto_1fr_1fr_1fr_auto] sm:grid-cols-[120px_1fr_1fr_1fr_auto] gap-3 items-end">
-                  <F label={i===0?'Size':''}>
+                <div key={i} className="grid grid-cols-2 sm:grid-cols-[120px_1fr_1fr_1fr_auto] gap-3 items-end pb-4 sm:pb-0 border-b border-white/5 sm:border-0 last:border-0">
+                  <F label="Size">
                     <select value={size.size} onChange={e => updateSize(i,'size',e.target.value)} className="admin-input">
                       {SIZES.map(s => <option key={s}>{s}</option>)}
                     </select>
                   </F>
-                  <F label={i===0?'Price (KES)':''}>
+                  <F label="Price (KES)">
                     <input type="number" value={size.price} onChange={e => updateSize(i,'price',+e.target.value)}
                       className="admin-input" placeholder="8500" />
                   </F>
-                  <F label={i===0?'Stock':''}>
+                  <F label="Stock">
                     <input type="number" value={size.stock} onChange={e => updateSize(i,'stock',+e.target.value)}
                       className="admin-input" placeholder="10" />
                   </F>
-                  <F label={i===0?'SKU':''}>
+                  <F label="SKU">
                     <input value={size.sku} onChange={e => updateSize(i,'sku',e.target.value)}
                       className="admin-input font-mono text-sm" placeholder="VOI-50" />
                   </F>
                   <button onClick={() => up('sizes', form.sizes.filter((_,j)=>j!==i))}
                     disabled={form.sizes.length===1}
-                    className="text-white/20 hover:text-red-400 transition-colors disabled:opacity-20 pb-2">
+                    className="col-span-2 sm:col-span-1 flex justify-end sm:pb-2 text-white/20 hover:text-red-400 transition-colors disabled:opacity-20">
                     <Trash2 size={14} />
                   </button>
                 </div>

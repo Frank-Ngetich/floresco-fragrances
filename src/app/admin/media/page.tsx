@@ -355,7 +355,7 @@ export default function AdminMedia() {
 
       {/* Grid / List */}
       <div className="flex gap-6">
-        <div className="flex-1 min-w-0">
+        <div className={cn('flex-1 min-w-0', selected && 'hidden lg:block')}>
           {loading ? (
             <div className={cn(
               view === 'grid'
@@ -473,7 +473,7 @@ export default function AdminMedia() {
         <AnimatePresence>
           {selected && (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-              className="w-64 flex-shrink-0 bg-white/[0.04] border border-white/10 rounded-lg overflow-hidden flex flex-col sticky top-24 self-start">
+              className="w-full lg:w-64 flex-shrink-0 bg-white/[0.04] border border-white/10 rounded-lg overflow-hidden flex flex-col lg:sticky lg:top-24 self-start">
               <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                 <span className="text-xs font-medium text-white">Details</span>
                 <button onClick={() => setSelected(null)} className="text-white/30 hover:text-white"><X size={14} /></button>

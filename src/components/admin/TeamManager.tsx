@@ -209,7 +209,8 @@ export function TeamManager() {
         ) : team.length === 0 ? (
           <div className="p-8 text-center text-white/30 text-sm">No team accounts yet.</div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-sm">
             <thead>
               <tr className="bg-white/[0.03] text-left text-[0.62rem] tracking-[0.14em] uppercase text-white/40">
                 <th className="px-4 py-3 font-medium">Name</th>
@@ -256,6 +257,7 @@ export function TeamManager() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

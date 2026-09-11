@@ -138,7 +138,7 @@ export default function AdminOrders() {
   return (
     <div className="flex gap-6 min-h-0">
       {/* New order toasts */}
-      <div className="fixed top-20 right-4 z-50 flex flex-col gap-2 w-[320px]">
+      <div className="fixed top-20 left-4 right-4 sm:left-auto sm:right-4 z-50 flex flex-col gap-2 sm:w-[320px]">
         <AnimatePresence>
           {newArrivals.map(order => (
             <motion.div key={order._id}
@@ -270,7 +270,7 @@ export default function AdminOrders() {
         {selected && (
           <motion.div
             initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-            className="w-full lg:w-[400px] flex-shrink-0 bg-white/[0.04] border border-white/10 rounded-lg overflow-hidden flex flex-col self-start sticky top-24 max-h-[calc(100vh-8rem)]">
+            className="w-full lg:w-[400px] flex-shrink-0 bg-white/[0.04] border border-white/10 rounded-lg overflow-hidden flex flex-col self-start sticky top-24 max-h-[calc(100dvh-8rem)]">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 flex-shrink-0">
               <div>

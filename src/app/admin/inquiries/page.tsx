@@ -166,7 +166,7 @@ export default function AdminInquiries() {
         {selected && (
           <motion.div
             initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-            className="w-full lg:w-[420px] flex-shrink-0 bg-white/[0.04] border border-white/10 rounded-lg overflow-hidden flex flex-col self-start sticky top-24 max-h-[calc(100vh-8rem)]">
+            className="w-full lg:w-[420px] flex-shrink-0 bg-white/[0.04] border border-white/10 rounded-lg overflow-hidden flex flex-col self-start sticky top-24 max-h-[calc(100dvh-8rem)]">
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 flex-shrink-0">
               <div>
                 <div className="text-sm text-white font-medium">{selected.subject}</div>
