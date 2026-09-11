@@ -4,6 +4,7 @@ import { motion, useInView } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Calendar, FileText } from 'lucide-react';
+import { HERO_IMAGE_GRADE, HERO_RADIAL_SCRIM, HeroBottomFade, HeroWatermarkF } from '@/components/shared/HeroDecor';
 
 const T = { ease: [0.16, 1, 0.3, 1] as const };
 
@@ -56,8 +57,10 @@ export function BlogClient() {
     <div className="page-enter">
       {/* Header */}
       <div className="relative py-24 text-center overflow-hidden">
-        <Image src={JOURNAL_HERO_BG} alt="" fill priority sizes="100vw" className="object-cover" />
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(8,7,6,0.5) 0%, rgba(8,7,6,0.76) 100%)' }} />
+        <Image src={JOURNAL_HERO_BG} alt="" fill priority sizes="100vw" className="object-cover" style={{ filter: HERO_IMAGE_GRADE }} />
+        <div className="absolute inset-0" style={{ background: HERO_RADIAL_SCRIM }} />
+        <HeroWatermarkF />
+        <HeroBottomFade />
         <motion.div ref={heroRef} initial={{ opacity: 0, y: 24 }} animate={heroIn ? { opacity: 1, y: 0 } : {}} transition={{ ...T, duration: 0.8 }}
           className="relative">
           <div className="eyebrow mb-4" style={{ color: 'rgb(201,164,85)' }}>Floresco</div>

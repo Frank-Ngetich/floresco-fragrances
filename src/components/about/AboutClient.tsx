@@ -4,6 +4,7 @@ import { motion, useInView } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Shield, Star, Heart, Truck } from 'lucide-react';
+import { HERO_IMAGE_GRADE, HERO_RADIAL_SCRIM, HeroBottomFade, HeroWatermarkF } from '@/components/shared/HeroDecor';
 
 // TEMPORARY — free-license Unsplash placeholder (photo by Miftah Dudung)
 // standing in for real brand photography on the Story hero.
@@ -46,8 +47,10 @@ export function AboutClient() {
       {/* Hero */}
       <section ref={heroRef}
         className="relative min-h-[65vh] flex items-center justify-center text-center overflow-hidden">
-        <Image src={STORY_HERO_BG} alt="" fill priority sizes="100vw" className="object-cover" />
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(8,7,6,0.55) 0%, rgba(8,7,6,0.78) 100%)' }} />
+        <Image src={STORY_HERO_BG} alt="" fill priority sizes="100vw" className="object-cover" style={{ filter: HERO_IMAGE_GRADE }} />
+        <div className="absolute inset-0" style={{ background: HERO_RADIAL_SCRIM }} />
+        <HeroWatermarkF />
+        <HeroBottomFade />
         <motion.div initial={{ opacity: 0, y: 28 }} animate={heroIn ? { opacity: 1, y: 0 } : {}}
           transition={{ ...T, duration: 0.9, delay: 0.2 }}
           className="relative px-6 max-w-3xl mx-auto py-32">

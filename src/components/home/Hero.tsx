@@ -8,6 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 import { DEFAULT_HERO, type HeroData } from '@/lib/hero-defaults';
+import { HERO_IMAGE_GRADE, HeroBottomFade } from '@/components/shared/HeroDecor';
 
 /* ─── Animation variants ─────────────────────────────── */
 const STAGGER = {
@@ -71,27 +72,33 @@ export function Hero({ hero }: { hero?: Partial<HeroData> }) {
       {/* ── Full-bleed background photo ──────────────── */}
       <motion.div style={{ scale: bgScale, willChange: 'transform' }} className="absolute inset-0">
         {data.heroBackgroundUrl ? (
-          <Image
-            src={data.heroBackgroundUrl}
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover"
-          />
+          // Extended beyond the visible frame so the frost blur below has no
+          // edge to reveal — the section's overflow-hidden clips it cleanly.
+          <div className="absolute -inset-10">
+            <Image
+              src={data.heroBackgroundUrl}
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover"
+              style={{ filter: `${HERO_IMAGE_GRADE} blur(18px)` }}
+            />
+          </div>
         ) : (
           <div className="absolute inset-0"
             style={{ background: `linear-gradient(165deg, ${data.bgFrom} 0%, ${data.bgMid} 50%, ${data.bgTo} 100%)` }}
           />
         )}
         {/* Scrim — dark on the left where text sits, easing off toward the
-            product card so the photo still reads through on the right */}
+            product card so the photo still reads through, softly, on the right */}
         <div className="absolute inset-0"
           style={{
-            background: 'linear-gradient(100deg, rgba(8,7,6,0.92) 0%, rgba(8,7,6,0.72) 32%, rgba(8,7,6,0.38) 58%, rgba(8,7,6,0.12) 78%, transparent 100%)',
+            background: 'linear-gradient(100deg, rgba(8,7,6,0.90) 0%, rgba(8,7,6,0.70) 32%, rgba(8,7,6,0.44) 58%, rgba(8,7,6,0.24) 78%, rgba(8,7,6,0.14) 100%)',
           }}
         />
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 25%)' }} />
+        <HeroBottomFade height="26vh" />
       </motion.div>
 
       {/* ── Decorative letter — one quiet signature touch ── */}

@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { MapPin, Clock, Phone, Mail, Plus, Minus, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { HERO_IMAGE_GRADE, HERO_RADIAL_SCRIM, HeroBottomFade, HeroWatermarkF } from '@/components/shared/HeroDecor';
 
 const T = { ease: [0.16, 1, 0.3, 1] as const };
 
@@ -77,8 +78,10 @@ export function ContactClient() {
     <div className="page-enter">
       {/* Header */}
       <section ref={heroRef} className="relative py-24 text-center overflow-hidden">
-        <Image src={VISIT_HERO_BG} alt="" fill priority sizes="100vw" className="object-cover" />
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(8,7,6,0.55) 0%, rgba(8,7,6,0.8) 100%)' }} />
+        <Image src={VISIT_HERO_BG} alt="" fill priority sizes="100vw" className="object-cover" style={{ filter: HERO_IMAGE_GRADE }} />
+        <div className="absolute inset-0" style={{ background: HERO_RADIAL_SCRIM }} />
+        <HeroWatermarkF />
+        <HeroBottomFade />
         <motion.div initial={{ opacity: 0, y: 24 }} animate={heroIn ? { opacity: 1, y: 0 } : {}} transition={{ ...T, duration: 0.8 }}
           className="relative">
           <div className="eyebrow mb-4" style={{ color: 'rgb(201,164,85)' }}>Get in Touch</div>
