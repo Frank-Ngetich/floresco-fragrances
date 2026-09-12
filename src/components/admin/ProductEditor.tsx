@@ -1,11 +1,10 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Save, RefreshCw, Check, Plus, Trash2, ArrowLeft, Upload, Eye, Image, AlertTriangle } from 'lucide-react';
 import { BottleSVG } from '@/components/ui/BottleSVG';
 import { formatKES, slugify, cn } from '@/lib/utils';
-import { PRODUCTS_DATA } from '@/lib/products-data';
 import { uploadToMedia, MediaUnconfiguredError } from '@/lib/media-upload';
 
 type Status = 'draft' | 'active' | 'archived';
@@ -63,25 +62,31 @@ export function ProductEditor({ productId }: { productId?: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const isNew = !productId || productId === 'new';
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>(isNew ? 'ready' : 'loading');
 
-  useEffect(() => {
-    if (!isNew) {
-      /* Try API then fallback to static */
-      fetch(`/api/products/${productId}`)
-        .then(r => r.json())
-        .then(d => setForm({ ...BLANK, ...d }))
-        .catch(() => {
-          const p = PRODUCTS_DATA.find(x => x.slug === productId || `s-${PRODUCTS_DATA.indexOf(x)}` === productId);
-          if (p) setForm({
-            ...BLANK, name:p.name, brand:p.brand, category:p.category, tagline:p.tagline,
-            description:p.description, scentNotes:{ ...p.scentNotes },
-            sizes: p.sizes.map(s=>({...s})), color1:p.color1, color2:p.color2,
-            featured:!!p.featured, badge:p.badge||'', status:'active', slug:p.slug,
-            seo: p.seo, images: p.images.map(i=>({...i})),
-          });
-        });
+  const loadProduct = useCallback(async (attempt = 1): Promise<void> => {
+    if (isNew) return;
+    setLoadState('loading');
+    try {
+      const res = await fetch(`/api/products/${productId}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json();
+      setForm({ ...BLANK, ...d });
+      setLoadState('ready');
+    } catch (err) {
+      /* A cold Cloudflare-to-MongoDB connection occasionally blips — one
+         quiet retry clears most of those before bothering the user. Never
+         fall back to blank/demo data here: presenting an empty form for a
+         real product risks someone unknowingly saving over it. */
+      if (attempt === 1) {
+        await new Promise(r => setTimeout(r, 600));
+        return loadProduct(2);
+      }
+      setLoadState('error');
     }
   }, [productId, isNew]);
+
+  useEffect(() => { loadProduct(); }, [loadProduct]);
 
   function up<K extends keyof ProductForm>(k: K, v: ProductForm[K]) {
     setForm(p => ({ ...p, [k]: v }));
@@ -164,6 +169,37 @@ export function ProductEditor({ productId }: { productId?: string }) {
     { id:'media',     label:'Images' },
     { id:'seo',       label:'SEO' },
   ];
+
+  if (loadState === 'loading') {
+    return (
+      <div className="flex items-center justify-center py-32 text-white/40 gap-2.5">
+        <RefreshCw size={16} className="animate-spin" /> Loading product…
+      </div>
+    );
+  }
+
+  if (loadState === 'error') {
+    return (
+      <div className="max-w-lg mx-auto py-24 text-center">
+        <AlertTriangle size={32} strokeWidth={1} className="mx-auto text-amber-400 mb-5" />
+        <h2 className="font-display text-xl text-white mb-2">Couldn&apos;t load this product</h2>
+        <p className="text-white/45 text-sm mb-8">
+          The connection to the database timed out. Nothing has been changed — go back and try again rather than
+          risk saving over the real product with a blank form.
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          <button onClick={() => loadProduct()}
+            className="flex items-center gap-2 bg-gold-600 hover:bg-gold-700 text-white text-xs tracking-[0.14em] uppercase font-medium px-5 py-2.5 rounded transition-colors">
+            <RefreshCw size={13} /> Retry
+          </button>
+          <button onClick={() => router.push('/admin/products')}
+            className="text-white/50 hover:text-white text-xs tracking-[0.14em] uppercase px-5 py-2.5 transition-colors">
+            Back to Products
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

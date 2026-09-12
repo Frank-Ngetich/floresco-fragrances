@@ -1,40 +1,45 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, Eye, ToggleLeft, ToggleRight, ChevronDown, Package, Filter } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Eye, ToggleLeft, ToggleRight, ChevronDown, Package, Filter, AlertTriangle, RefreshCw } from 'lucide-react';
 import { ProductImage } from '@/components/ui/ProductImage';
 import { formatKES, cn } from '@/lib/utils';
-import { PRODUCTS_DATA } from '@/lib/products-data';
 import type { IProduct } from '@/types';
 
 type SortKey = 'name' | 'price' | 'stock' | 'status';
 
-function toProduct(p: typeof PRODUCTS_DATA[0], i: number): IProduct {
-  return {
-    ...p, _id: `s-${i}`, status: 'active',
-    sizes: p.sizes.map(s => ({ ...s })),
-    images: p.images.map(img => ({ ...img })),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-}
-
 export default function AdminProducts() {
   const [products, setProducts] = useState<IProduct[]>([]);
+  const [loadState,setLoadState]= useState<'loading' | 'ready' | 'error'>('loading');
   const [query,    setQuery]    = useState('');
   const [catFilter,setCatFilter]= useState('');
   const [sort,     setSort]     = useState<SortKey>('name');
   const [deleting, setDeleting] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid'|'table'>('table');
 
-  useEffect(() => {
-    /* Try API first, fallback to static */
-    fetch('/api/products?limit=100&status=all')
-      .then(r => r.json())
-      .then(d => { if (d.products?.length) setProducts(d.products); else throw new Error(); })
-      .catch(() => setProducts(PRODUCTS_DATA.map(toProduct)));
+  const load = useCallback(async (attempt = 1): Promise<void> => {
+    setLoadState('loading');
+    try {
+      const res = await fetch('/api/products?limit=100&status=all');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json();
+      setProducts(d.products || []);
+      setLoadState('ready');
+    } catch {
+      /* Never silently substitute fake demo products here — this view is
+         used to manage real inventory, and showing fabricated data with no
+         indication of failure could make someone think their catalog is
+         fine when it's actually just unreachable right now. */
+      if (attempt === 1) {
+        await new Promise(r => setTimeout(r, 600));
+        return load(2);
+      }
+      setLoadState('error');
+    }
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   const filtered = products
     .filter(p => {
@@ -77,6 +82,31 @@ export default function AdminProducts() {
   }
 
   const CATS = ['women','men','arabian-oud','unisex','gift-sets','accessories'];
+
+  if (loadState === 'loading' && products.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-32 text-white/40 gap-2.5">
+        <RefreshCw size={16} className="animate-spin" /> Loading products…
+      </div>
+    );
+  }
+
+  if (loadState === 'error') {
+    return (
+      <div className="max-w-lg mx-auto py-24 text-center">
+        <AlertTriangle size={32} strokeWidth={1} className="mx-auto text-amber-400 mb-5" />
+        <h2 className="font-display text-xl text-white mb-2">Couldn&apos;t load your products</h2>
+        <p className="text-white/45 text-sm mb-8">
+          The connection to the database timed out. This is a temporary connectivity issue, not data loss —
+          your inventory is unaffected.
+        </p>
+        <button onClick={() => load()}
+          className="inline-flex items-center gap-2 bg-gold-600 hover:bg-gold-700 text-white text-xs tracking-[0.14em] uppercase font-medium px-5 py-2.5 rounded transition-colors">
+          <RefreshCw size={13} /> Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

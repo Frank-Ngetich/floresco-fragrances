@@ -5,6 +5,7 @@ import { PRODUCTS_DATA } from '@/lib/products-data';
 import { auth } from '@/lib/auth';
 import { canAccessSection } from '@/lib/permissions';
 import { getProductsCache, isProductsCacheFresh, setProductsCache, invalidateProductsCache } from '@/lib/products-cache';
+import { withTimeout } from '@/lib/with-timeout';
 import type { UserRole } from '@/types';
 
 export const runtime = 'nodejs';
@@ -15,8 +16,10 @@ async function getBaseProducts(): Promise<{ list: any[]; source: string }> {
   }
 
   try {
-    await connectDB();
-    const products = await Product.find({ status: 'active' }).sort({ createdAt: -1 }).limit(200).lean();
+    const products = await withTimeout((async () => {
+      await connectDB();
+      return Product.find({ status: 'active' }).sort({ createdAt: -1 }).limit(200).lean();
+    })(), 8000, 'public products query');
     if (products.length > 0) {
       setProductsCache(products);
       return { list: products, source: 'db' };
@@ -51,15 +54,17 @@ export async function GET(req: NextRequest) {
      queries live. The admin UI already has its own client-side fallback. */
   if (status !== 'active') {
     try {
-      await connectDB();
-      const query: any = {};
-      if (status !== 'all') query.status = status;
-      if (cat) query.category = cat;
-      const products = await Product.find(query).sort({ createdAt: -1 }).limit(limit).lean();
+      const products = await withTimeout((async () => {
+        await connectDB();
+        const query: any = {};
+        if (status !== 'all') query.status = status;
+        if (cat) query.category = cat;
+        return Product.find(query).sort({ createdAt: -1 }).limit(limit).lean();
+      })(), 8000, 'admin products query');
       return NextResponse.json({ products, total: products.length, source: 'db' });
     } catch (err: any) {
       console.error('[GET /api/products] admin query failed:', err.message);
-      return NextResponse.json({ error: err.message }, { status: 500 });
+      return NextResponse.json({ error: err.message }, { status: 503 });
     }
   }
 

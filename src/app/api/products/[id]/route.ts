@@ -4,15 +4,21 @@ import { Product } from '@/models';
 import { auth } from '@/lib/auth';
 import { canDeleteProduct, canAccessSection } from '@/lib/permissions';
 import { invalidateProductsCache } from '@/lib/products-cache';
+import { withTimeout } from '@/lib/with-timeout';
 import type { UserRole } from '@/types';
 export const runtime = 'nodejs';
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await connectDB();
-    const p = await Product.findById(params.id).lean() || await Product.findOne({ slug: params.id }).lean();
+    const p = await withTimeout((async () => {
+      await connectDB();
+      return await Product.findById(params.id).lean() || await Product.findOne({ slug: params.id }).lean();
+    })(), 8000, 'product lookup');
     if (!p) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(p);
-  } catch { return NextResponse.json({ error: 'Failed' }, { status: 500 }); }
+  } catch (err: any) {
+    console.error('[GET /api/products/[id]]', err.message);
+    return NextResponse.json({ error: err.message || 'Failed to load product' }, { status: 503 });
+  }
 }
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
