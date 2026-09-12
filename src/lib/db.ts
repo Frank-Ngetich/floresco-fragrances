@@ -32,17 +32,28 @@ export async function connectDB(): Promise<typeof mongoose> {
     throw new Error('MONGODB_URI is not defined in environment variables');
   }
 
+  const opts = {
+    bufferCommands: false,
+    maxPoolSize: 10,
+    serverSelectionTimeoutMS: 6000,
+    connectTimeoutMS: 6000,
+    socketTimeoutMS: 8000,
+  };
+
+  // A fresh handshake from a cold Workers isolate to Atlas occasionally
+  // blips (DNS, TLS, a slow shard) — one quick retry clears most of those
+  // instead of surfacing a failure the caller then has to fall back from.
   try {
-    await mongoose.connect(MONGODB_URI, {
-      bufferCommands: false,
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 10000,
-      connectTimeoutMS: 10000,
-      socketTimeoutMS: 10000,
-    });
+    await mongoose.connect(MONGODB_URI, opts);
   } catch (err) {
     try { await mongoose.connection.close(); } catch {}
-    throw err;
+    await new Promise(r => setTimeout(r, 300));
+    try {
+      await mongoose.connect(MONGODB_URI, opts);
+    } catch (retryErr) {
+      try { await mongoose.connection.close(); } catch {}
+      throw retryErr;
+    }
   }
 
   return mongoose;

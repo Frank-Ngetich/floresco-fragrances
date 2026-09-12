@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db';
 import { Product } from '@/models';
 import { auth } from '@/lib/auth';
 import { canDeleteProduct, canAccessSection } from '@/lib/permissions';
+import { invalidateProductsCache } from '@/lib/products-cache';
 import type { UserRole } from '@/types';
 export const runtime = 'nodejs';
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -25,6 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const body = await req.json();
     const p = await Product.findByIdAndUpdate(params.id, { $set: body }, { new: true });
     if (!p) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    invalidateProductsCache();
     return NextResponse.json(p);
   } catch { return NextResponse.json({ error: 'Failed' }, { status: 500 }); }
 }
@@ -37,6 +39,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     }
     await connectDB();
     await Product.findByIdAndDelete(params.id);
+    invalidateProductsCache();
     return NextResponse.json({ success: true });
   } catch { return NextResponse.json({ error: 'Failed' }, { status: 500 }); }
 }
