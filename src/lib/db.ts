@@ -34,10 +34,18 @@ export async function connectDB(): Promise<typeof mongoose> {
 
   const opts = {
     bufferCommands: false,
-    maxPoolSize: 10,
-    serverSelectionTimeoutMS: 6000,
-    connectTimeoutMS: 6000,
+    // A Workers isolate handles one request at a time and is short-lived —
+    // a large pool just means more sockets to open (each a full TLS
+    // handshake) before any of them are useful, and more state to leak
+    // across isolate recycling. A single connection reused via readyState
+    // is both cheaper to establish and simpler to reason about here.
+    maxPoolSize: 1,
+    minPoolSize: 0,
+    family: 4, // skip IPv6 resolution attempts — pure overhead on Workers' network stack
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 5000,
     socketTimeoutMS: 8000,
+    heartbeatFrequencyMS: 30000,
   };
 
   // A fresh handshake from a cold Workers isolate to Atlas occasionally
