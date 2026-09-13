@@ -28,5 +28,14 @@
 
   "r2_buckets": [
     { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "floresco-next-cache" }
+  ],
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "floresco-db",
+      "database_id": "103c4dfd-21ec-4276-80ac-b1dde27be630",
+      "migrations_dir": "./migrations"
+    }
   ]
 }

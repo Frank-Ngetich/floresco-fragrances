@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { connectDB } from '@/lib/db';
-import { User } from '@/models';
+import { eq } from 'drizzle-orm';
+import { getDb } from '@/db/client';
+import { users } from '@/db/schema';
+import { findUserByEmailWithSecrets } from '@/lib/users';
 import { auth } from '@/lib/auth';
 import { validatePassword } from '@/lib/password';
 import { notifyPasswordChanged } from '@/lib/notifications';
@@ -24,8 +26,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
-    await connectDB();
-    const user = await User.findOne({ email: session.user.email.toLowerCase() }).select('+password');
+    const db = await getDb();
+    const user = await findUserByEmailWithSecrets(db, session.user.email.toLowerCase());
     if (!user?.password) {
       return NextResponse.json({ error: 'Account not found.' }, { status: 404 });
     }
@@ -36,10 +38,9 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
-    await User.updateOne(
-      { _id: user._id },
-      { $set: { password: passwordHash, mustChangePassword: false } }
-    );
+    await db.update(users)
+      .set({ password: passwordHash, mustChangePassword: false, updatedAt: new Date() })
+      .where(eq(users.id, user.id));
 
     notifyPasswordChanged(user.email, user.name).catch(console.error);
 

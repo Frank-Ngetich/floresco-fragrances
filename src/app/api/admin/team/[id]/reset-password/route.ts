@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { connectDB } from '@/lib/db';
-import { User } from '@/models';
+import { eq } from 'drizzle-orm';
+import { getDb } from '@/db/client';
+import { users } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { canManageTeam } from '@/lib/permissions';
 import { notifyTeamInvite } from '@/lib/notifications';
@@ -24,16 +25,15 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     const role = (session?.user as { role?: UserRole })?.role;
     if (!canManageTeam(role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    await connectDB();
-    const target = await User.findById(params.id);
-    if (!target || !TEAM_ROLES.includes(target.role)) {
+    const db = await getDb();
+    const [target] = await db.select().from(users).where(eq(users.id, params.id)).limit(1);
+    if (!target || !TEAM_ROLES.includes(target.role as UserRole)) {
       return NextResponse.json({ error: 'Team member not found.' }, { status: 404 });
     }
 
     const tempPassword = generateTempPassword();
-    target.password = await bcrypt.hash(tempPassword, 12);
-    target.mustChangePassword = true;
-    await target.save();
+    const passwordHash = await bcrypt.hash(tempPassword, 12);
+    await db.update(users).set({ password: passwordHash, mustChangePassword: true, updatedAt: new Date() }).where(eq(users.id, target.id));
 
     notifyTeamInvite(target.email, target.name, tempPassword, target.role).catch(console.error);
 

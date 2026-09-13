@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { connectDB } from '@/lib/db';
-import { User } from '@/models';
+import { eq } from 'drizzle-orm';
+import { getDb } from '@/db/client';
+import { users } from '@/db/schema';
+import { findUserByEmailWithSecrets } from '@/lib/users';
 import { notifyPasswordReset } from '@/lib/notifications';
 
 export const runtime = 'nodejs';
@@ -18,18 +20,17 @@ export async function POST(req: NextRequest) {
 
     if (!email?.trim()) return generic;
 
-    await connectDB();
+    const db = await getDb();
     const normalised = email.trim().toLowerCase();
-    const user = await User.findOne({ email: normalised }).select('+password');
+    const user = await findUserByEmailWithSecrets(db, normalised);
 
     if (user?.password) {
       const rawToken    = crypto.randomBytes(32).toString('hex');
       const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
 
-      await User.updateOne(
-        { _id: user._id },
-        { $set: { resetToken: hashedToken, resetTokenExpiry: new Date(Date.now() + TOKEN_TTL_MS) } }
-      );
+      await db.update(users)
+        .set({ resetToken: hashedToken, resetTokenExpiry: new Date(Date.now() + TOKEN_TTL_MS), updatedAt: new Date() })
+        .where(eq(users.id, user.id));
 
       const resetUrl = `${SITE}/reset-password?token=${rawToken}&email=${encodeURIComponent(normalised)}`;
       await notifyPasswordReset(user.email, user.name, resetUrl);

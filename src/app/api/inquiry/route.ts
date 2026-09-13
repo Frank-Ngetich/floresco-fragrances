@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Inquiry } from '@/models';
+import { getDb } from '@/db/client';
+import { inquiries } from '@/db/schema';
+import { newId } from '@/lib/id';
 import { notifyInquiryReceived, notifyAdminNewInquiry } from '@/lib/notifications';
 import { z } from 'zod';
 
@@ -19,13 +20,18 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const data = schema.parse(body);
 
-    await connectDB();
-    const inquiry = await Inquiry.create(data);
+    const db = await getDb();
+    const id = newId();
+    const now = new Date();
+    await db.insert(inquiries).values({
+      id, name: data.name, email: data.email, phone: data.phone || null,
+      subject: data.subject, message: data.message, createdAt: now, updatedAt: now,
+    });
 
     notifyInquiryReceived(data.email, data.name).catch(console.error);
     notifyAdminNewInquiry(data.name, data.email, data.subject, data.message).catch(console.error);
 
-    return NextResponse.json({ success: true, id: inquiry._id }, { status: 201 });
+    return NextResponse.json({ success: true, id }, { status: 201 });
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json({ error: err.errors }, { status: 400 });

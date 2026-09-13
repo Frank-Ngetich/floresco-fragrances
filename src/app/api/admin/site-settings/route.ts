@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { SiteSettings } from '@/models';
+import { eq } from 'drizzle-orm';
+import { getDb } from '@/db/client';
+import { siteSettings } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { canAccessSection, canWriteSettings } from '@/lib/permissions';
 import type { UserRole } from '@/types';
@@ -13,10 +14,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await connectDB();
+    const db = await getDb();
     const key = req.nextUrl.searchParams.get('key');
-    if (!key) { const all = await SiteSettings.find({}).lean(); return NextResponse.json(all); }
-    const s = await SiteSettings.findOne({ key }).lean();
+    if (!key) {
+      const all = await db.select().from(siteSettings);
+      return NextResponse.json(all);
+    }
+    const [s] = await db.select().from(siteSettings).where(eq(siteSettings.key, key)).limit(1);
     return NextResponse.json(s || { key, value: null });
   } catch { return NextResponse.json({ error: 'Failed' }, { status: 500 }); }
 }
@@ -31,8 +35,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden — your role cannot change this.' }, { status: 403 });
     }
 
-    await connectDB();
-    const s = await SiteSettings.findOneAndUpdate({ key }, { key, value }, { upsert: true, new: true });
+    const db = await getDb();
+    const now = new Date();
+    await db.insert(siteSettings).values({ key, value, createdAt: now, updatedAt: now })
+      .onConflictDoUpdate({ target: siteSettings.key, set: { value, updatedAt: now } });
+    const [s] = await db.select().from(siteSettings).where(eq(siteSettings.key, key)).limit(1);
     return NextResponse.json(s);
   } catch { return NextResponse.json({ error: 'Failed' }, { status: 500 }); }
 }

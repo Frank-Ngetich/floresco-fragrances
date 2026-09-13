@@ -51,3 +51,7 @@ yarn-error.log*
 
 # old patch-script backups (not part of the app)
 _patch*_backup_*/
+
+# real customer data exported by scripts/migrate-mongo-to-d1.ts — regenerable,
+# never belongs in git (names, emails, phone numbers, order details)
+/migrations-data/

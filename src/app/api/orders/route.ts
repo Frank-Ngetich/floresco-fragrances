@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Order, User } from '@/models';
+import { eq, desc, count } from 'drizzle-orm';
+import { getDb } from '@/db/client';
+import { orders, orderItems, orderStatusHistory, users } from '@/db/schema';
+import { toIOrder, generateOrderNumber } from '@/lib/orders';
+import { newId } from '@/lib/id';
 import { auth } from '@/lib/auth';
 import { canAccessSection } from '@/lib/permissions';
 import { calcDiscount } from '@/lib/coupons';
@@ -9,16 +12,9 @@ import type { UserRole } from '@/types';
 
 export const runtime = 'nodejs';
 
-function generateOrderNumber(): string {
-  const now    = new Date();
-  const date   = now.toISOString().slice(0, 10).replace(/-/g, '').slice(2); // YYMMDD
-  const random = Math.random().toString(36).toUpperCase().slice(2, 6);
-  return `FL-${date}-${random}`;
-}
-
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
+    const db = await getDb();
     const body = await req.json();
 
     const { customer, items, delivery, payment, discount, subtotal } = body;
@@ -38,62 +34,60 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     const sessionUserId = (session?.user as { id?: string } | undefined)?.id;
 
-    /* Ensure customer record exists (upsert by email) */
-    const customerUser = await User.findOneAndUpdate(
-      { email: customer.email.toLowerCase() },
-      {
-        $setOnInsert: {
-          email: customer.email.toLowerCase(),
-          name:  customer.name,
-          phone: customer.phone,
-          role:  'customer',
-        },
-      },
-      { upsert: true, new: true }
-    );
+    /* Ensure a customer record exists (upsert-by-email, insert-only —
+       never overwrites an existing account's name/phone). */
+    const email = customer.email.toLowerCase();
+    const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    let customerUserId = existingUser?.id;
+    if (!customerUserId) {
+      customerUserId = newId();
+      const now = new Date();
+      await db.insert(users).values({
+        id: customerUserId, email, name: customer.name, phone: customer.phone, role: 'customer',
+        createdAt: now, updatedAt: now,
+      });
+    }
 
     const orderNumber = generateOrderNumber();
+    const orderId = newId();
+    const now = new Date();
 
-    const order = await Order.create({
-      orderNumber,
-      customer: {
-        userId: sessionUserId || customerUser._id,
-        name:   customer.name,
-        email:  customer.email.toLowerCase(),
-        phone:  customer.phone,
-      },
-      items: items.map((i: any) => ({
-        productId: i.productId,
-        name:      i.name,
-        brand:     i.brand || '',
-        size:      i.size,
-        price:     Number(i.price),
-        quantity:  Number(i.quantity),
-        image:     i.image || '',
-      })),
-      delivery: {
-        method:  delivery?.method || 'courier',
-        fee:     Number(delivery?.fee ?? 0),
-        address: delivery?.address || null,
-      },
-      payment: {
-        method: payment?.method || 'mpesa',
+    await db.batch([
+      db.insert(orders).values({
+        id: orderId,
+        orderNumber,
+        customerUserId: sessionUserId || customerUserId,
+        customerEmail: email,
+        customerPhone: customer.phone,
+        customerName: customer.name,
+        deliveryMethod: delivery?.method || 'courier',
+        deliveryAddress: delivery?.address || null,
+        deliveryFee: Number(delivery?.fee ?? 0),
+        paymentMethod: payment?.method || 'mpesa',
+        paymentStatus: 'pending',
+        paymentAmount: recomputedTotal,
         status: 'pending',
-        amount: recomputedTotal,
-      },
-      discount: discountAmount > 0 ? { code: discount.code.trim().toUpperCase(), amount: discountAmount } : undefined,
-      subtotal: Number(subtotal),
-      total:    recomputedTotal,
-      status:   'pending',
-      statusHistory: [{ status: 'pending', updatedAt: new Date() }],
-    });
+        subtotal: Number(subtotal),
+        discountCode: discountAmount > 0 ? discount.code.trim().toUpperCase() : null,
+        discountAmount: discountAmount > 0 ? discountAmount : null,
+        total: recomputedTotal,
+        createdAt: now,
+        updatedAt: now,
+      }),
+      ...items.map((i: any) => db.insert(orderItems).values({
+        orderId, productId: i.productId || null, name: i.name, size: i.size,
+        price: Number(i.price), quantity: Number(i.quantity), image: i.image || null,
+      })),
+      db.insert(orderStatusHistory).values({ orderId, status: 'pending', updatedAt: now }),
+    ] as any);
 
     /* Fire-and-forget — don't make the customer wait on email delivery */
-    const orderObj = order.toObject();
+    const created = await db.query.orders.findFirst({ where: eq(orders.id, orderId), with: { items: true, statusHistory: true, notifications: true } });
+    const orderObj = toIOrder(created);
     notifyOrderConfirmation(orderObj).catch(console.error);
     notifyAdminNewOrder(orderObj).catch(console.error);
 
-    return NextResponse.json({ orderNumber, _id: order._id }, { status: 201 });
+    return NextResponse.json({ orderNumber, _id: orderId }, { status: 201 });
   } catch (err: any) {
     console.error('[POST /api/orders]', err);
     return NextResponse.json({ error: err.message || 'Failed to create order' }, { status: 500 });
@@ -108,24 +102,23 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await connectDB();
+    const db = await getDb();
     const { searchParams } = req.nextUrl;
     const page   = Math.max(1, Number(searchParams.get('page')  || 1));
     const limit  = Math.min(100, Number(searchParams.get('limit') || 20));
     const status = searchParams.get('status');
-    const query: any = {};
-    if (status && status !== 'all') query.status = status;
+    const where = status && status !== 'all' ? eq(orders.status, status as any) : undefined;
 
-    const [orders, total] = await Promise.all([
-      Order.find(query)
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean(),
-      Order.countDocuments(query),
+    const [rows, [{ value: total }]] = await Promise.all([
+      db.query.orders.findMany({
+        where, orderBy: desc(orders.createdAt),
+        offset: (page - 1) * limit, limit,
+        with: { items: true, statusHistory: true, notifications: true },
+      }),
+      db.select({ value: count() }).from(orders).where(where),
     ]);
 
-    return NextResponse.json({ orders, total, page, pages: Math.ceil(total / limit) });
+    return NextResponse.json({ orders: rows.map(toIOrder), total, page, pages: Math.ceil(total / limit) });
   } catch (err: any) {
     console.error('[GET /api/orders]', err);
     return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });

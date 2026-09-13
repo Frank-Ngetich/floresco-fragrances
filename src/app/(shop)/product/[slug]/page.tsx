@@ -1,13 +1,15 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { and, eq, ne } from 'drizzle-orm';
 import { ProductDetailClient } from '@/components/shop/ProductDetailClient';
-import { connectDB } from '@/lib/db';
-import { Product } from '@/models';
+import { getDb } from '@/db/client';
+import { products } from '@/db/schema';
+import { toIProduct } from '@/lib/products';
 import { PRODUCTS_DATA } from '@/lib/products-data';
 import type { IProduct } from '@/types';
 
 // Shorter cache window than the homepage since price/stock live here —
-// still avoids hitting MongoDB on every single page view.
+// still avoids hitting the database on every single page view.
 export const revalidate = 60;
 
 interface Props { params: { slug: string } }
@@ -25,9 +27,12 @@ function fromStatic(slug: string): IProduct | undefined {
 
 async function getProduct(slug: string): Promise<IProduct | undefined> {
   try {
-    await connectDB();
-    const doc = await Product.findOne({ slug, status: 'active' }).lean();
-    if (doc) return JSON.parse(JSON.stringify(doc));
+    const db = await getDb();
+    const row = await db.query.products.findFirst({
+      where: and(eq(products.slug, slug), eq(products.status, 'active')),
+      with: { sizes: true, images: true },
+    });
+    if (row) return toIProduct(row);
   } catch {}
   return fromStatic(slug);
 }
@@ -46,9 +51,13 @@ function relatedFromStatic(category: string, excludeSlug: string): IProduct[] {
 
 async function getRelated(category: string, excludeSlug: string): Promise<IProduct[]> {
   try {
-    await connectDB();
-    const docs = await Product.find({ category, slug: { $ne: excludeSlug }, status: 'active' }).limit(4).lean();
-    if (docs.length) return JSON.parse(JSON.stringify(docs));
+    const db = await getDb();
+    const rows = await db.query.products.findMany({
+      where: and(eq(products.category, category as any), ne(products.slug, excludeSlug), eq(products.status, 'active')),
+      with: { sizes: true, images: true },
+      limit: 4,
+    });
+    if (rows.length) return rows.map(toIProduct);
   } catch {}
   return relatedFromStatic(category, excludeSlug);
 }

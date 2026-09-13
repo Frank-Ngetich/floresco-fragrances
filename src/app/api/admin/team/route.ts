@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { connectDB } from '@/lib/db';
-import { User } from '@/models';
+import { inArray, eq, asc } from 'drizzle-orm';
+import { getDb } from '@/db/client';
+import { users } from '@/db/schema';
+import { findUserByEmailWithSecrets } from '@/lib/users';
+import { newId } from '@/lib/id';
 import { auth } from '@/lib/auth';
 import { canManageTeam } from '@/lib/permissions';
 import { notifyTeamInvite } from '@/lib/notifications';
@@ -25,11 +28,11 @@ export async function GET() {
     const role = (session?.user as { role?: UserRole })?.role;
     if (!canManageTeam(role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    await connectDB();
-    const team = await User.find({ role: { $in: TEAM_ROLES } })
-      .select('name email role createdAt')
-      .sort({ createdAt: 1 })
-      .lean();
+    const db = await getDb();
+    const team = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt })
+      .from(users)
+      .where(inArray(users.role, TEAM_ROLES))
+      .orderBy(asc(users.createdAt));
     return NextResponse.json({ team });
   } catch {
     return NextResponse.json({ error: 'Failed to load team' }, { status: 500 });
@@ -50,33 +53,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Role must be staff, manager, or owner.' }, { status: 400 });
     }
 
-    await connectDB();
+    const db = await getDb();
     const normalised = email.trim().toLowerCase();
-    const existing = await User.findOne({ email: normalised }).select('+password');
+    const existing = await findUserByEmailWithSecrets(db, normalised);
     if (existing?.password) {
       return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 });
     }
 
     const tempPassword = generateTempPassword();
     const passwordHash = await bcrypt.hash(tempPassword, 12);
+    const now = new Date();
 
-    let member;
+    let member: { id: string; name: string; email: string; role: UserRole };
     if (existing) {
       // A passwordless guest-checkout record already exists for this email — claim it.
-      existing.name = name.trim();
-      existing.role = newRole;
-      existing.password = passwordHash;
-      existing.mustChangePassword = true;
-      await existing.save();
-      member = existing;
+      await db.update(users)
+        .set({ name: name.trim(), role: newRole, password: passwordHash, mustChangePassword: true, updatedAt: now })
+        .where(eq(users.id, existing.id));
+      member = { id: existing.id, name: name.trim(), email: existing.email, role: newRole };
     } else {
-      member = await User.create({ name: name.trim(), email: normalised, role: newRole, password: passwordHash, mustChangePassword: true });
+      const id = newId();
+      await db.insert(users).values({
+        id, name: name.trim(), email: normalised, role: newRole,
+        password: passwordHash, mustChangePassword: true, createdAt: now, updatedAt: now,
+      });
+      member = { id, name: name.trim(), email: normalised, role: newRole };
     }
 
     notifyTeamInvite(member.email, member.name, tempPassword, member.role).catch(console.error);
 
     return NextResponse.json({
-      user: { _id: member._id, name: member.name, email: member.email, role: member.role },
+      user: { _id: member.id, name: member.name, email: member.email, role: member.role },
       tempPassword,
     }, { status: 201 });
   } catch (err: any) {

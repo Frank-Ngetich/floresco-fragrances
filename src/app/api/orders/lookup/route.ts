@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Order } from '@/models';
+import { and, eq } from 'drizzle-orm';
+import { getDb } from '@/db/client';
+import { orders } from '@/db/schema';
+import { toIOrder } from '@/lib/orders';
 
 export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   try {
-    await connectDB();
+    const db = await getDb();
     const { searchParams } = req.nextUrl;
     const orderNumber = searchParams.get('orderNumber')?.trim();
     const email       = searchParams.get('email')?.trim().toLowerCase();
@@ -18,18 +20,19 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const order: any = await Order.findOne({
-      orderNumber,
-      'customer.email': email,
-    }).lean();
+    const row = await db.query.orders.findFirst({
+      where: and(eq(orders.orderNumber, orderNumber), eq(orders.customerEmail, email)),
+      with: { items: true, statusHistory: true },
+    });
 
-    if (!order) {
+    if (!row) {
       return NextResponse.json(
         { error: 'Order not found. Please check your order number and email address.' },
         { status: 404 }
       );
     }
 
+    const order = toIOrder(row);
     /* Strip sensitive internal fields before returning */
     const safe = {
       orderNumber:    order.orderNumber,

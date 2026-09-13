@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Order, Product, User } from '@/models';
+import { and, gte, eq, inArray, lt, sum, count, countDistinct } from 'drizzle-orm';
+import { getDb } from '@/db/client';
+import { orders, products, productSizes, users } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { canAccessSection } from '@/lib/permissions';
 import type { UserRole } from '@/types';
@@ -15,40 +16,35 @@ export async function GET(_req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await connectDB();
-
+    const db = await getDb();
     const now        = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekStart  = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const [todayAgg, weekAgg, pendingCount, totalOrders, totalCustomers, lowStockProducts] = await Promise.all([
-      /* Today revenue */
-      Order.aggregate([
-        { $match: { createdAt: { $gte: todayStart }, 'payment.status': 'paid' } },
-        { $group: { _id: null, total: { $sum: '$total' } } },
-      ]),
-      /* Week revenue */
-      Order.aggregate([
-        { $match: { createdAt: { $gte: weekStart }, 'payment.status': 'paid' } },
-        { $group: { _id: null, total: { $sum: '$total' } } },
-      ]),
-      /* Pending orders */
-      Order.countDocuments({ status: { $in: ['pending', 'confirmed', 'packed'] } }),
-      /* All orders */
-      Order.countDocuments({}),
-      /* Customers */
-      User.countDocuments({ role: 'customer' }),
-      /* Low stock products */
-      Product.countDocuments({ 'sizes.stock': { $lt: 5 }, status: 'active' }),
+    const [
+      [todayAgg], [weekAgg], [{ value: pendingCount }], [{ value: totalOrders }],
+      [{ value: totalCustomers }], [{ value: lowStockCount }],
+    ] = await Promise.all([
+      db.select({ total: sum(orders.total) }).from(orders)
+        .where(and(gte(orders.createdAt, todayStart), eq(orders.paymentStatus, 'paid'))),
+      db.select({ total: sum(orders.total) }).from(orders)
+        .where(and(gte(orders.createdAt, weekStart), eq(orders.paymentStatus, 'paid'))),
+      db.select({ value: count() }).from(orders)
+        .where(inArray(orders.status, ['pending', 'confirmed', 'packed'])),
+      db.select({ value: count() }).from(orders),
+      db.select({ value: count() }).from(users).where(eq(users.role, 'customer')),
+      db.select({ value: countDistinct(products.id) }).from(products)
+        .innerJoin(productSizes, eq(productSizes.productId, products.id))
+        .where(and(lt(productSizes.stock, 5), eq(products.status, 'active'))),
     ]);
 
     return NextResponse.json({
-      todayRevenue:   todayAgg[0]?.total  ?? 0,
-      weekRevenue:    weekAgg[0]?.total   ?? 0,
-      pendingOrders:  pendingCount,
+      todayRevenue:  Number(todayAgg?.total ?? 0),
+      weekRevenue:   Number(weekAgg?.total ?? 0),
+      pendingOrders: pendingCount,
       totalOrders,
       totalCustomers,
-      lowStockCount:  lowStockProducts,
+      lowStockCount,
     });
   } catch (err: any) {
     console.error('[GET /api/admin/stats]', err);

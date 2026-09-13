@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { User } from '@/models';
+import { eq, count } from 'drizzle-orm';
+import { getDb } from '@/db/client';
+import { users } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { canManageTeam } from '@/lib/permissions';
 import type { UserRole } from '@/types';
@@ -21,25 +22,24 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: 'Role must be staff, manager, or owner.' }, { status: 400 });
     }
 
-    await connectDB();
-    const target = await User.findById(params.id);
-    if (!target || !TEAM_ROLES.includes(target.role)) {
+    const db = await getDb();
+    const [target] = await db.select().from(users).where(eq(users.id, params.id)).limit(1);
+    if (!target || !TEAM_ROLES.includes(target.role as UserRole)) {
       return NextResponse.json({ error: 'Team member not found.' }, { status: 404 });
     }
 
-    if (target.role === 'owner' && newRole !== 'owner' && String(target._id) === actorId) {
+    if (target.role === 'owner' && newRole !== 'owner' && target.id === actorId) {
       return NextResponse.json({ error: "You can't change your own role away from Owner." }, { status: 400 });
     }
     if (target.role === 'owner' && newRole !== 'owner') {
-      const ownerCount = await User.countDocuments({ role: 'owner' });
+      const [{ value: ownerCount }] = await db.select({ value: count() }).from(users).where(eq(users.role, 'owner'));
       if (ownerCount <= 1) {
         return NextResponse.json({ error: 'At least one Owner account must remain.' }, { status: 400 });
       }
     }
 
-    target.role = newRole;
-    await target.save();
-    return NextResponse.json({ _id: target._id, name: target.name, email: target.email, role: target.role });
+    await db.update(users).set({ role: newRole, updatedAt: new Date() }).where(eq(users.id, target.id));
+    return NextResponse.json({ _id: target.id, name: target.name, email: target.email, role: newRole });
   } catch {
     return NextResponse.json({ error: 'Failed to update role' }, { status: 500 });
   }
@@ -56,19 +56,19 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "You can't remove your own account." }, { status: 400 });
     }
 
-    await connectDB();
-    const target = await User.findById(params.id);
-    if (!target || !TEAM_ROLES.includes(target.role)) {
+    const db = await getDb();
+    const [target] = await db.select().from(users).where(eq(users.id, params.id)).limit(1);
+    if (!target || !TEAM_ROLES.includes(target.role as UserRole)) {
       return NextResponse.json({ error: 'Team member not found.' }, { status: 404 });
     }
     if (target.role === 'owner') {
-      const ownerCount = await User.countDocuments({ role: 'owner' });
+      const [{ value: ownerCount }] = await db.select({ value: count() }).from(users).where(eq(users.role, 'owner'));
       if (ownerCount <= 1) {
         return NextResponse.json({ error: 'At least one Owner account must remain.' }, { status: 400 });
       }
     }
 
-    await User.findByIdAndDelete(params.id);
+    await db.delete(users).where(eq(users.id, params.id));
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Failed to remove team member' }, { status: 500 });

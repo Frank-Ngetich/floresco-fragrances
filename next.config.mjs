@@ -1,3 +1,10 @@
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
+
+// Gives `next dev` access to Cloudflare bindings (D1, R2, KV) via a local
+// Miniflare-backed proxy — without this, the D1 binding is undefined outside
+// the deployed Worker. Doesn't need to be awaited (async internally only).
+initOpenNextCloudflareForDev();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['framer-motion'],
@@ -37,7 +44,7 @@ const nextConfig = {
 
   /* Cloudflare Pages compatibility */
   experimental: {
-    serverComponentsExternalPackages: ['mongoose', 'bcryptjs'],
+    serverComponentsExternalPackages: ['bcryptjs'],
   },
 };
 

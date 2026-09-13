@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Order } from '@/models';
+import { eq } from 'drizzle-orm';
+import { getDb } from '@/db/client';
+import { orders, orderStatusHistory } from '@/db/schema';
 
 export const runtime = 'nodejs';
 
@@ -15,44 +16,33 @@ export async function POST(req: NextRequest) {
 
     const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = callback;
 
-    await connectDB();
+    const db = await getDb();
+    const [order] = await db.select({ id: orders.id }).from(orders).where(eq(orders.mpesaCheckoutId, CheckoutRequestID)).limit(1);
 
-    if (ResultCode === 0) {
-      /* Payment successful */
-      const meta: Record<string, any> = {};
-      (CallbackMetadata?.Item || []).forEach((item: any) => {
-        meta[item.Name] = item.Value;
-      });
+    if (order) {
+      const now = new Date();
+      if (ResultCode === 0) {
+        /* Payment successful */
+        const meta: Record<string, any> = {};
+        (CallbackMetadata?.Item || []).forEach((item: any) => {
+          meta[item.Name] = item.Value;
+        });
 
-      await Order.findOneAndUpdate(
-        { 'payment.mpesaCheckoutId': CheckoutRequestID },
-        {
-          $set: {
-            'payment.status':      'paid',
-            'payment.mpesaRef':    meta.MpesaReceiptNumber || '',
-            'payment.paidAt':      new Date(),
-            status:                'confirmed',
-          },
-          $push: {
-            statusHistory: {
-              status:    'confirmed',
-              updatedAt: new Date(),
-              note:      `M-Pesa payment received. Ref: ${meta.MpesaReceiptNumber || 'N/A'}`,
-            },
-          },
-        }
-      );
-    } else {
-      /* Payment failed or cancelled */
-      await Order.findOneAndUpdate(
-        { 'payment.mpesaCheckoutId': CheckoutRequestID },
-        {
-          $set: {
-            'payment.status':        'failed',
-            'payment.failureReason': ResultDesc,
-          },
-        }
-      );
+        await db.batch([
+          db.update(orders)
+            .set({ paymentStatus: 'paid', mpesaRef: meta.MpesaReceiptNumber || '', paymentPaidAt: now, status: 'confirmed', updatedAt: now })
+            .where(eq(orders.id, order.id)),
+          db.insert(orderStatusHistory).values({
+            orderId: order.id, status: 'confirmed', updatedAt: now,
+            note: `M-Pesa payment received. Ref: ${meta.MpesaReceiptNumber || 'N/A'}`,
+          }),
+        ]);
+      } else {
+        /* Payment failed or cancelled */
+        await db.update(orders)
+          .set({ paymentStatus: 'failed', paymentFailureReason: ResultDesc, updatedAt: now })
+          .where(eq(orders.id, order.id));
+      }
     }
 
     /* Always return 200 to Safaricom or they will retry */

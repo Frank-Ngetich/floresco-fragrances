@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Order } from '@/models';
+import { eq } from 'drizzle-orm';
+import { getDb } from '@/db/client';
+import { orders } from '@/db/schema';
 
 export const runtime = 'nodejs';
 
@@ -78,11 +79,8 @@ export async function POST(req: NextRequest) {
 
     if (stkData.ResponseCode === '0') {
       /* Store checkout request ID for callback matching */
-      await connectDB();
-      await Order.findOneAndUpdate(
-        { orderNumber },
-        { $set: { 'payment.mpesaCheckoutId': stkData.CheckoutRequestID } }
-      );
+      const db = await getDb();
+      await db.update(orders).set({ mpesaCheckoutId: stkData.CheckoutRequestID, updatedAt: new Date() }).where(eq(orders.orderNumber, orderNumber));
       return NextResponse.json({ success: true, checkoutRequestId: stkData.CheckoutRequestID });
     }
 

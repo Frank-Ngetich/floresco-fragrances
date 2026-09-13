@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { User } from '@/models';
+import { eq } from 'drizzle-orm';
+import { getDb } from '@/db/client';
+import { users } from '@/db/schema';
+import { findUserByEmail } from '@/lib/users';
 import { auth } from '@/lib/auth';
 
 export const runtime = 'nodejs';
@@ -12,20 +14,28 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
     }
 
-    await connectDB();
+    const db = await getDb();
+    const email = session.user.email.toLowerCase();
     const { name, phone } = await req.json();
 
-    const customer = await User.findOneAndUpdate(
-      { email: session.user.email.toLowerCase() },
-      { $set: { ...(name ? { name: name.trim() } : {}), ...(phone ? { phone: phone.trim() } : {}) } },
-      { new: true }
-    );
-
-    if (!customer) {
+    const existing = await findUserByEmail(db, email);
+    if (!existing) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ name: customer.name, email: customer.email, phone: customer.phone });
+    await db.update(users)
+      .set({
+        ...(name  ? { name: name.trim() }   : {}),
+        ...(phone ? { phone: phone.trim() } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(users.email, email));
+
+    return NextResponse.json({
+      name:  name  ? name.trim()  : existing.name,
+      email: existing.email,
+      phone: phone ? phone.trim() : existing.phone,
+    });
   } catch (err: any) {
     console.error('[PATCH /api/account/profile]', err);
     return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });

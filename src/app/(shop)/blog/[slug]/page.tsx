@@ -3,8 +3,10 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Calendar } from 'lucide-react';
-import { connectDB } from '@/lib/db';
-import { BlogPost } from '@/models';
+import { and, eq } from 'drizzle-orm';
+import { getDb } from '@/db/client';
+import { blogPosts } from '@/db/schema';
+import { toIBlogPost } from '@/lib/blog';
 
 export const revalidate = 300;
 
@@ -21,10 +23,10 @@ interface Post {
 
 async function getPost(slug: string): Promise<Post | null> {
   try {
-    await connectDB();
-    const post = await BlogPost.findOne({ slug, published: true }).lean();
-    if (!post) return null;
-    return JSON.parse(JSON.stringify(post));
+    const db = await getDb();
+    const row = await db.query.blogPosts.findFirst({ where: and(eq(blogPosts.slug, slug), eq(blogPosts.published, true)) });
+    if (!row) return null;
+    return toIBlogPost(row);
   } catch {
     return null;
   }
