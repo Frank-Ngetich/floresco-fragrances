@@ -163,7 +163,10 @@ export function LifestyleSection({ images = {} }: { images?: Record<string, stri
         </FadeUp>
 
         <div ref={ref} className="grid lg:grid-cols-3 gap-4">
-          {LIFESTYLE.map((panel, i) => (
+          {LIFESTYLE.map((panel, i) => {
+            const hasImage = !!images[panel.category];
+            const light = hasImage || panel.dark; // white text whenever there's a dark scrim, real photo or not
+            return (
             <motion.div key={panel.label}
               initial={{ opacity:0, y:36 }}
               animate={inView ? { opacity:1, y:0 } : {}}
@@ -172,7 +175,7 @@ export function LifestyleSection({ images = {} }: { images?: Record<string, stri
             >
               <Link href={panel.href} className="block">
                 <div className={`relative h-[420px] lg:h-[520px] bg-gradient-to-br ${panel.bg} overflow-hidden flex items-end`}>
-                  {images[panel.category] ? (
+                  {hasImage ? (
                     <>
                       <NextImage
                         src={images[panel.category] as string}
@@ -181,7 +184,12 @@ export function LifestyleSection({ images = {} }: { images?: Record<string, stri
                         sizes="(max-width: 1024px) 100vw, 33vw"
                         className="object-cover"
                       />
-                      <div className={`absolute inset-0 ${panel.dark ? 'bg-gradient-to-t from-black/80 via-black/20 to-transparent' : 'bg-gradient-to-t from-black/60 via-black/5 to-transparent'}`} />
+                      {/* Stronger, taller scrim than a plain photo needs — the
+                          headline/body sit directly on real photography now,
+                          and photo brightness varies too much to trust a
+                          thin fade for reliable contrast. */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/10" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
                     </>
                   ) : (
                     /* Bottle silhouette placeholder */
@@ -196,21 +204,21 @@ export function LifestyleSection({ images = {} }: { images?: Record<string, stri
                   {/* Label */}
                   <div className="absolute top-7 left-7">
                     <span style={{ color: panel.accent }}
-                      className="text-[0.62rem] tracking-[0.3em] uppercase font-medium">{panel.label}</span>
+                      className="text-[0.62rem] tracking-[0.3em] uppercase font-medium drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">{panel.label}</span>
                   </div>
                   {/* Hover overlay */}
                   <div className="overlay absolute inset-0" />
                   {/* Content */}
                   <div className="relative z-10 p-8 w-full">
-                    <h3 className={`font-display text-[1.5rem] mb-3 leading-tight ${panel.dark ? 'text-white' : 'text-stone'}`}>
+                    <h3 className={`font-display text-[1.5rem] mb-3 leading-tight ${light ? 'text-white' : 'text-stone'}`}>
                       {panel.headline}
                     </h3>
-                    <p className={`text-sm leading-relaxed mb-5 opacity-0 group-hover:opacity-100 transition-opacity duration-350 ${panel.dark ? 'text-white/75' : 'text-stone/65'}`}>
+                    <p className={`text-sm leading-relaxed mb-5 ${light ? 'text-white/80' : 'text-stone/65'}`}>
                       {panel.body}
                     </p>
                     <span
-                      style={{ color: panel.dark ? '#fff' : panel.accent }}
-                      className="inline-flex items-center gap-1.5 text-[0.65rem] tracking-[0.22em] uppercase font-medium border-b border-current pb-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-350"
+                      style={{ color: light ? '#fff' : panel.accent }}
+                      className="inline-flex items-center gap-1.5 text-[0.65rem] tracking-[0.22em] uppercase font-medium border-b border-current pb-0.5"
                     >
                       {panel.cta} <ArrowRight size={10} />
                     </span>
@@ -218,7 +226,8 @@ export function LifestyleSection({ images = {} }: { images?: Record<string, stri
                 </div>
               </Link>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Story banner */}
