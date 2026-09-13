@@ -8,9 +8,10 @@ import { toIProduct } from '@/lib/products';
 import { PRODUCTS_DATA } from '@/lib/products-data';
 import type { IProduct } from '@/types';
 
-// Shorter cache window than the homepage since price/stock live here —
-// still avoids hitting the database on every single page view.
-export const revalidate = 60;
+// ISR doesn't work on this deployment — see the identical note in
+// src/app/(shop)/page.tsx for why. Force dynamic so price/stock are always
+// current instead of frozen at whatever the build-time render captured.
+export const dynamic = 'force-dynamic';
 
 interface Props { params: { slug: string } }
 

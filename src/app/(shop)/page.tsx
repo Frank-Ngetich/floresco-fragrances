@@ -12,10 +12,16 @@ export const metadata: Metadata = {
   title: 'Floresco — Luxury Fragrances & Lifestyle | Eldoret, Kenya',
 };
 
-// Cache the rendered homepage for 5 minutes instead of re-querying on every
-// single visit — featured products and category photos don't change
-// minute to minute, and this is the most-visited page on the site.
-export const revalidate = 300;
+// ISR (`revalidate`) doesn't work on this deployment — OpenNext-Cloudflare's
+// background-revalidation queue is an unconfigured stub here ("FatalError:
+// Dummy queue is not implemented"), so a `revalidate`d page never actually
+// regenerates after its first render. Since the very first render happens
+// during Cloudflare's build step — where the D1 binding doesn't exist yet,
+// only at Workers runtime — that first (broken) render gets served forever.
+// Force dynamic instead: every request queries D1 directly. D1 queries run
+// in low single-digit milliseconds, so the cost of skipping the cache here
+// is negligible next to the correctness this buys.
+export const dynamic = 'force-dynamic';
 
 const CATEGORY_IDS = ['women', 'men', 'arabian-oud', 'unisex', 'gift-sets'];
 

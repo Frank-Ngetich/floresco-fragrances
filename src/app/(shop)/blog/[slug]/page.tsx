@@ -8,7 +8,10 @@ import { getDb, isTrue } from '@/db/client';
 import { blogPosts } from '@/db/schema';
 import { toIBlogPost } from '@/lib/blog';
 
-export const revalidate = 300;
+// ISR doesn't work on this deployment — see the identical note in
+// src/app/(shop)/page.tsx for why. Force dynamic so a newly published post
+// isn't stuck invisible behind a stale build-time render.
+export const dynamic = 'force-dynamic';
 
 interface Post {
   title: string;
