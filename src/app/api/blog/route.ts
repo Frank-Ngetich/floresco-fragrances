@@ -5,6 +5,12 @@ import { blogPosts } from '@/db/schema';
 import { toIBlogPost } from '@/lib/blog';
 
 export const runtime = 'nodejs';
+// This GET reads no request-dependent API (no searchParams/cookies/headers),
+// so Next.js's static-optimization heuristic silently prerenders it at
+// build time — when the D1 binding isn't available (only exists at Workers
+// runtime), permanently baking in an empty-fallback response that never
+// re-executes. Force it dynamic so every request actually hits D1.
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
