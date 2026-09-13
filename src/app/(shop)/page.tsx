@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { and, eq, desc } from 'drizzle-orm';
 import { Hero } from '@/components/home/Hero';
 import { HomeMarquee, HomeCategories, HomeFeatured, LifestyleSection, HomeVisit } from '@/components/home/HomeSections';
-import { getDb, type Db } from '@/db/client';
+import { getDb, isTrue, type Db } from '@/db/client';
 import { products } from '@/db/schema';
 import { toIProduct } from '@/lib/products';
 import { PRODUCTS_DATA } from '@/lib/products-data';
@@ -48,7 +48,7 @@ async function getCategoryImages(db: Db) {
 async function getFeaturedProducts(db: Db): Promise<IProduct[]> {
   try {
     const rows = await db.query.products.findMany({
-      where: and(eq(products.featured, true), eq(products.status, 'active')),
+      where: and(isTrue(products.featured), eq(products.status, 'active')),
       orderBy: desc(products.createdAt),
       with: { sizes: true, images: true },
       limit: 4,

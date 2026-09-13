@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Calendar } from 'lucide-react';
 import { and, eq } from 'drizzle-orm';
-import { getDb } from '@/db/client';
+import { getDb, isTrue } from '@/db/client';
 import { blogPosts } from '@/db/schema';
 import { toIBlogPost } from '@/lib/blog';
 
@@ -24,7 +24,7 @@ interface Post {
 async function getPost(slug: string): Promise<Post | null> {
   try {
     const db = await getDb();
-    const row = await db.query.blogPosts.findFirst({ where: and(eq(blogPosts.slug, slug), eq(blogPosts.published, true)) });
+    const row = await db.query.blogPosts.findFirst({ where: and(eq(blogPosts.slug, slug), isTrue(blogPosts.published)) });
     if (!row) return null;
     return toIBlogPost(row);
   } catch {
